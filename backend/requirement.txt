@@ -1,0 +1,25 @@
+opencv-python -> Untuk pemrosesan gambar dan video
+              -> Mengakses webcam → cv2.VideoCapture(0)
+              -> Deteksi wajah menggunakan Haar Cascade → cv2.CascadeClassifier()
+              -> Cropping dan resize wajah di aligner.py
+              -> Menampilkan bounding box dan teks di main.py
+              -> Menampilkan hasil deteksi real-time dengan cv2.imshow()
+
+numpy -> Library komputasi berbasis array
+      -> Menyimpan dan memproses embedding wajah (fitur numerik dari CNN)
+      -> Normalisasi data (emb / np.linalg.norm(emb))
+      -> Mengonversi list ke array (np.array(X))
+      -> Menyimpan dataset embedding ke file .npz (np.savez())
+
+scikit-learn -> Library machine learning klasik
+             -> Melatih model SVM (Support Vector Machine) dari data embedding
+             -> Membuat classifier yang mengenali identitas wajah berdasarkan fitur CNN
+
+joblib -> Library untuk menyimpan dan memuat model machine learning secara efisien
+       -> joblib.dump(...) → menyimpan model SVM + centroid ke file face_model.pkl
+       -> joblib.load(...) → memuat model itu kembali di recognizer.py
+
+tensorflow -> Framework deep learning — dipakai untuk membangun dan menjalankan model CNN.
+           -> Memuat model FaceNet (versi TFLite = versi ringan TensorFlow)
+           -> Menjalankan inferensi untuk menghasilkan embedding wajah
+           -> CNN inilah yang menghasilkan vektor numerik yang merepresentasikan wajah seseorang
