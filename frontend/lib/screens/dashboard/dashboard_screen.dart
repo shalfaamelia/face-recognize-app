@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../utils/palette.dart';
+import '../riwayat_akses/riwayat_akses_screen.dart';
 
 // ─── Model ─────────────────────────────────────────────────
 class AktivitasItem {
@@ -64,8 +65,8 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nama = user['nama'] ?? 'Pengguna';
-    final inisial = nama.isNotEmpty
+    final String nama = (user['nama'] ?? 'Pengguna').toString();
+    final String inisial = nama.isNotEmpty
         ? nama.trim().split(' ').map((w) => w[0]).take(2).join().toUpperCase()
         : 'U';
 
@@ -86,7 +87,7 @@ class DashboardScreen extends StatelessWidget {
                     const SizedBox(height: 20),
                     _SectionLabel('Menu Utama'),
                     const SizedBox(height: 10),
-                    _MenuGrid(),
+                    _MenuGrid(user: user),
                     const SizedBox(height: 20),
                     _SectionLabel('Aktivitas Terbaru'),
                     const SizedBox(height: 10),
@@ -121,27 +122,39 @@ class _Header extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Selamat datang 👋',
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Selamat datang 👋',
                     style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white.withOpacity(0.75),
-                        fontWeight: FontWeight.w400)),
-                const SizedBox(height: 4),
-                Text(nama,
+                      fontSize: 12,
+                      color: Colors.white.withOpacity(0.75),
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    nama,
                     style: const TextStyle(
-                        fontSize: 17,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500)),
-              ]),
+                      fontSize: 17,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
               CircleAvatar(
                 radius: 20,
                 backgroundColor: Colors.white.withOpacity(0.2),
-                child: Text(inisial,
-                    style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white)),
+                child: Text(
+                  inisial,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
               ),
             ],
           ),
@@ -158,22 +171,30 @@ class _Header extends StatelessWidget {
                 const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Status Lab',
-                        style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.white70,
-                            fontWeight: FontWeight.w400)),
+                    Text(
+                      'Status Lab',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
                     SizedBox(height: 4),
-                    Text('Laboratorium A · Aktif',
-                        style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500)),
+                    Text(
+                      'Laboratorium A · Aktif',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ],
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.25),
                     borderRadius: BorderRadius.circular(8),
@@ -194,11 +215,28 @@ class _Header extends StatelessWidget {
   String _todayLabel() {
     final now = DateTime.now();
     const days = [
-      'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+      'Minggu',
     ];
     const months = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
     ];
     return '${days[now.weekday - 1]}, ${now.day} ${months[now.month]}';
   }
@@ -211,16 +249,28 @@ class _StatRow extends StatelessWidget {
     return Row(
       children: const [
         Expanded(
-            child: _StatCard(value: '3', label: 'Peminjaman\nAktif',
-                color: Palette.blue)),
+          child: _StatCard(
+            value: '3',
+            label: 'Peminjaman\nAktif',
+            color: Palette.blue,
+          ),
+        ),
         SizedBox(width: 10),
         Expanded(
-            child: _StatCard(value: '12', label: 'Selesai\nBulan Ini',
-                color: Palette.green)),
+          child: _StatCard(
+            value: '12',
+            label: 'Selesai\nBulan Ini',
+            color: Palette.green,
+          ),
+        ),
         SizedBox(width: 10),
         Expanded(
-            child: _StatCard(value: '2', label: 'Barang\nDilaporkan',
-                color: Palette.orange)),
+          child: _StatCard(
+            value: '2',
+            label: 'Barang\nDilaporkan',
+            color: Palette.orange,
+          ),
+        ),
       ],
     );
   }
@@ -230,8 +280,11 @@ class _StatCard extends StatelessWidget {
   final String value;
   final String label;
   final Color color;
-  const _StatCard(
-      {required this.value, required this.label, required this.color});
+  const _StatCard({
+    required this.value,
+    required this.label,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -242,18 +295,28 @@ class _StatCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Palette.cardBorder),
       ),
-      child: Column(children: [
-        Text(value,
+      child: Column(
+        children: [
+          Text(
+            value,
             style: TextStyle(
-                fontSize: 20, fontWeight: FontWeight.w500, color: color)),
-        const SizedBox(height: 4),
-        Text(label,
+              fontSize: 20,
+              fontWeight: FontWeight.w500,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
             textAlign: TextAlign.center,
             style: const TextStyle(
-                fontSize: 10,
-                color: Palette.textMuted,
-                height: 1.3)),
-      ]),
+              fontSize: 10,
+              color: Palette.textMuted,
+              height: 1.3,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -264,17 +327,31 @@ class _SectionLabel extends StatelessWidget {
   const _SectionLabel(this.text);
 
   @override
-  Widget build(BuildContext context) => Text(text,
-      style: const TextStyle(
+  Widget build(BuildContext context) => Text(
+        text,
+        style: const TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w500,
-          color: Palette.textMuted));
+          color: Palette.textMuted,
+        ),
+      );
 }
 
 // ─── Menu Grid ──────────────────────────────────────────────
 class _MenuGrid extends StatelessWidget {
+  final Map<String, dynamic> user;
+  const _MenuGrid({required this.user});
+
+  int? _parseUserId(dynamic value) {
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return null;
+    }
+
   @override
   Widget build(BuildContext context) {
+    final int? userId = _parseUserId(user['id']);
+
     return GridView.count(
       crossAxisCount: 2,
       crossAxisSpacing: 12,
@@ -289,8 +366,10 @@ class _MenuGrid extends StatelessWidget {
           iconBg: Palette.blueLight,
           title: 'Peminjaman Lab',
           subtitle: '3 aktif',
-          onTap: () => Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const PeminjamanLabScreen())),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PeminjamanLabScreen()),
+          ),
         ),
         _MenuCard(
           icon: Icons.inventory_2_outlined,
@@ -298,8 +377,10 @@ class _MenuGrid extends StatelessWidget {
           iconBg: Palette.orangeLight,
           title: 'Laporan Barang',
           subtitle: '2 laporan baru',
-          onTap: () => Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const LaporanBarangScreen())),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const LaporanBarangScreen()),
+          ),
         ),
         _MenuCard(
           icon: Icons.history_outlined,
@@ -307,8 +388,23 @@ class _MenuGrid extends StatelessWidget {
           iconBg: Palette.greenLight,
           title: 'Riwayat Akses',
           subtitle: 'Hari ini',
-          onTap: () => Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const RiwayatAksesScreen())),
+          onTap: () {
+            if (userId == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('ID pengguna tidak ditemukan. Silakan login ulang.'),
+                ),
+              );
+              return;
+            }
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => RiwayatAksesScreen(userId: userId),
+              ),
+            );
+          },
         ),
       ],
     );
@@ -370,15 +466,19 @@ class _MenuCardState extends State<_MenuCard> {
                 child: Icon(widget.icon, color: widget.iconColor, size: 20),
               ),
               const SizedBox(height: 10),
-              Text(widget.title,
-                  style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: Palette.textDark)),
+              Text(
+                widget.title,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Palette.textDark,
+                ),
+              ),
               const SizedBox(height: 3),
-              Text(widget.subtitle,
-                  style: const TextStyle(
-                      fontSize: 11, color: Palette.textMuted)),
+              Text(
+                widget.subtitle,
+                style: const TextStyle(fontSize: 11, color: Palette.textMuted),
+              ),
             ],
           ),
         ),
@@ -408,7 +508,10 @@ class _AktivitasCard extends StatelessWidget {
               _AktivitasRow(item: e.value),
               if (!isLast)
                 const Divider(
-                    height: 1, thickness: 0.5, color: Color(0xFFF0F0F0)),
+                  height: 1,
+                  thickness: 0.5,
+                  color: Color(0xFFF0F0F0),
+                ),
             ],
           );
         }).toList(),
@@ -441,15 +544,22 @@ class _AktivitasRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.judul,
-                    style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: Palette.textDark)),
+                Text(
+                  item.judul,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: Palette.textDark,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(item.waktu,
-                    style: const TextStyle(
-                        fontSize: 11, color: Palette.textMuted)),
+                Text(
+                  item.waktu,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Palette.textMuted,
+                  ),
+                ),
               ],
             ),
           ),
@@ -459,11 +569,14 @@ class _AktivitasRow extends StatelessWidget {
               color: item.badgeBg,
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Text(item.badge,
-                style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    color: item.badgeColor)),
+            child: Text(
+              item.badge,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                color: item.badgeColor,
+              ),
+            ),
           ),
         ],
       ),
@@ -559,23 +672,6 @@ class LaporanBarangScreen extends StatelessWidget {
         elevation: 0,
       ),
       body: const Center(child: Text('Halaman Laporan Barang')),
-    );
-  }
-}
-
-class RiwayatAksesScreen extends StatelessWidget {
-  const RiwayatAksesScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Riwayat Akses'),
-        backgroundColor: Palette.blue,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: const Center(child: Text('Halaman Riwayat Akses Masuk')),
     );
   }
 }
