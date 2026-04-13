@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../../services/api_service.dart';
+import '../../utils/palette.dart';
+import '../dashboard/dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,18 +26,6 @@ class _LoginScreenState extends State<LoginScreen>
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
 
-  static const _bgPage       = Color(0xFFEEF4FF);
-  static const _bgCard       = Color(0xFFFFFFFF);
-  static const _bgFieldFocus = Color(0xFFF0F6FF);
-  static const _bgField      = Color(0xFFF8FAFC);
-  static const _blue         = Color(0xFF1D6FE8);
-  static const _cardBorder   = Color(0xFFDBEAFE);
-  static const _textDark     = Color(0xFF0C2E6B);
-  static const _textMuted    = Color(0xFF6B89B2);
-  static const _textHint     = Color(0xFF94A3B8);
-  static const _borderFocus  = Color(0xFF93C5FD);
-  static const _borderIdle   = Color(0xFFE2E8F0);
-
   @override
   void initState() {
     super.initState();
@@ -53,11 +43,10 @@ class _LoginScreenState extends State<LoginScreen>
     )..repeat();
 
     _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
-    _slideAnim = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-        parent: _slideController, curve: Curves.easeOutCubic));
+    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero)
+        .animate(
+          CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
+        );
 
     Future.delayed(const Duration(milliseconds: 100), () {
       _fadeController.forward();
@@ -75,24 +64,38 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
+  // ─── LOGIN FUNCTION ───────────────────────────────
   void _login() async {
     setState(() {
       _loading = true;
       _errorMessage = null;
     });
+
     try {
       final user = await ApiService.login(
         _namaController.text.trim(),
         _nimController.text.trim(),
       );
+
+      // Jika berhasil
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => DashboardScreen(user: user)),
       );
     } catch (e) {
-      setState(() {
-        _errorMessage = e.toString().replaceAll("Exception: ", "");
-      });
+      // Debugging lengkap
+      debugPrint('Login gagal: ${e.toString()}');
+
+      // Menampilkan pesan error di UI
+      if (e is Exception) {
+        setState(() {
+          _errorMessage = e.toString().replaceAll("Exception: ", "");
+        });
+      } else {
+        setState(() {
+          _errorMessage = "Terjadi kesalahan tidak terduga";
+        });
+      }
     } finally {
       setState(() => _loading = false);
     }
@@ -101,7 +104,7 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bgPage,
+      backgroundColor: Palette.bgPage,
       body: Stack(
         children: [
           _AnimatedBackground(controller: _orbitController),
@@ -123,10 +126,10 @@ class _LoginScreenState extends State<LoginScreen>
                         height: 70,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: _blue,
+                          color: Palette.blue,
                           boxShadow: [
                             BoxShadow(
-                              color: _blue.withOpacity(0.28),
+                              color: Palette.blue.withOpacity(0.28),
                               blurRadius: 24,
                               offset: const Offset(0, 8),
                             ),
@@ -145,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen>
                         'Selamat Datang',
                         style: TextStyle(
                           fontFamily: 'Georgia',
-                          color: _textDark,
+                          color: Palette.textDark,
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.3,
@@ -155,7 +158,7 @@ class _LoginScreenState extends State<LoginScreen>
                       const Text(
                         'Masuk untuk melanjutkan ke portal akademik',
                         style: TextStyle(
-                          color: _textMuted,
+                          color: Palette.textMuted,
                           fontSize: 13.5,
                           height: 1.6,
                         ),
@@ -168,12 +171,15 @@ class _LoginScreenState extends State<LoginScreen>
                       Container(
                         padding: const EdgeInsets.all(28),
                         decoration: BoxDecoration(
-                          color: _bgCard,
+                          color: Palette.bgCard,
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: _cardBorder, width: 1),
+                          border: Border.all(
+                            color: Palette.cardBorder,
+                            width: 1,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: _blue.withOpacity(0.06),
+                              color: Palette.blue.withOpacity(0.06),
                               blurRadius: 32,
                               offset: const Offset(0, 12),
                             ),
@@ -207,17 +213,23 @@ class _LoginScreenState extends State<LoginScreen>
                             if (_errorMessage != null) ...[
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 12),
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFFEE2E2),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                      color: const Color(0xFFFCA5A5)),
+                                    color: const Color(0xFFFCA5A5),
+                                  ),
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.error_outline_rounded,
-                                        color: Color(0xFFDC2626), size: 18),
+                                    const Icon(
+                                      Icons.error_outline_rounded,
+                                      color: Color(0xFFDC2626),
+                                      size: 18,
+                                    ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
@@ -245,20 +257,21 @@ class _LoginScreenState extends State<LoginScreen>
                                         height: 24,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2.5,
-                                          color: _blue,
+                                          color: Palette.blue,
                                         ),
                                       ),
                                     )
                                   : ElevatedButton(
                                       onPressed: _login,
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: _blue,
+                                        backgroundColor: Palette.blue,
                                         foregroundColor: Colors.white,
                                         elevation: 0,
                                         shadowColor: Colors.transparent,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
                                       ),
                                       child: const Text(
@@ -278,7 +291,7 @@ class _LoginScreenState extends State<LoginScreen>
                       const SizedBox(height: 32),
                       const Text(
                         'Portal Akademik • 2026',
-                        style: TextStyle(color: _textHint, fontSize: 12),
+                        style: TextStyle(color: Palette.textHint, fontSize: 12),
                       ),
                       const SizedBox(height: 24),
                     ],
@@ -309,7 +322,7 @@ class _LoginScreenState extends State<LoginScreen>
           Text(
             label,
             style: TextStyle(
-              color: isFocused ? _blue : _textHint,
+              color: isFocused ? Palette.blue : Palette.textHint,
               fontSize: 11,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.9,
@@ -319,23 +332,26 @@ class _LoginScreenState extends State<LoginScreen>
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             decoration: BoxDecoration(
-              color: isFocused ? _bgFieldFocus : _bgField,
+              color: isFocused ? Palette.bgFieldFocus : Palette.bgField,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isFocused ? _borderFocus : _borderIdle,
+                color: isFocused ? Palette.borderFocus : Palette.borderIdle,
                 width: 1.5,
               ),
             ),
             child: TextField(
               controller: controller,
               keyboardType: keyboardType,
-              style: const TextStyle(color: _textDark, fontSize: 15),
+              style: const TextStyle(color: Palette.textDark, fontSize: 15),
               decoration: InputDecoration(
                 hintText: hint,
-                hintStyle: const TextStyle(color: _textHint, fontSize: 14),
+                hintStyle: const TextStyle(
+                  color: Palette.textHint,
+                  fontSize: 14,
+                ),
                 prefixIcon: Icon(
                   icon,
-                  color: isFocused ? _blue : _textHint,
+                  color: isFocused ? Palette.blue : Palette.textHint,
                   size: 20,
                 ),
                 border: InputBorder.none,
@@ -395,37 +411,6 @@ class _Orb extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-    );
-  }
-}
-
-// ─── Dashboard (Placeholder) ────────────────────────────────────────────────
-
-class DashboardScreen extends StatelessWidget {
-  final Map<String, dynamic> user;
-  const DashboardScreen({super.key, required this.user});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFEEF4FF),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          'Dashboard',
-          style: TextStyle(
-              color: Color(0xFF0C2E6B), fontWeight: FontWeight.w600),
-        ),
-        iconTheme: const IconThemeData(color: Color(0xFF1D6FE8)),
-      ),
-      body: Center(
-        child: Text(
-          'Selamat datang, ${user['nama']} (${user['role']})',
-          style: const TextStyle(color: Color(0xFF0C2E6B), fontSize: 17),
-          textAlign: TextAlign.center,
-        ),
-      ),
     );
   }
 }

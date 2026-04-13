@@ -6,7 +6,7 @@ from routes.user import user_bp
 from routes.user_faces import user_faces_bp
 from routes.jadwal import jadwal_bp
 from routes.login import login_bp
-
+            
 app = Flask(__name__)
 CORS(app)
 
@@ -20,5 +20,5 @@ app.register_blueprint(jadwal_bp, url_prefix='/api/jadwal')
 def index():
     return "Backend Aktif 🚀"
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
