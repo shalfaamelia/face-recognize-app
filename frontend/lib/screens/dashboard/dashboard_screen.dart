@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../utils/palette.dart';
 import '../riwayat_akses/riwayat_akses_screen.dart';
 import '../peminjaman_lab/peminjaman_lab_screen.dart';
+import '../laporan_barang/laporan_barang_screen.dart';
 
 // ─── Model ─────────────────────────────────────────────────
 class AktivitasItem {
@@ -380,7 +381,7 @@ class _MenuGrid extends StatelessWidget {
           subtitle: '2 laporan baru',
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const LaporanBarangScreen()),
+            MaterialPageRoute(builder: (_) => LaporanBarangScreen(user: user)),
           ),
         ),
         _MenuCard(
@@ -638,24 +639,6 @@ class _BottomNavState extends State<_BottomNav> {
           );
         }),
       ),
-    );
-  }
-}
-
-
-class LaporanBarangScreen extends StatelessWidget {
-  const LaporanBarangScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Laporan Barang'),
-        backgroundColor: Palette.blue,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: const Center(child: Text('Halaman Laporan Barang')),
     );
   }
 }
