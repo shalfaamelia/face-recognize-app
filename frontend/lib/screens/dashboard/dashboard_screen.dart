@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../utils/palette.dart';
+import '../profile/profile_screen.dart';
 import '../riwayat_akses/riwayat_akses_screen.dart';
 import '../peminjaman_lab/peminjaman_lab_screen.dart';
 import '../laporan_barang/laporan_barang_screen.dart';
@@ -102,7 +103,7 @@ class DashboardScreen extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: const _BottomNav(),
+      bottomNavigationBar: _BottomNav(user: user),
     );
   }
 }
@@ -330,13 +331,13 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text(
-        text,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          color: Palette.textMuted,
-        ),
-      );
+    text,
+    style: const TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w500,
+      color: Palette.textMuted,
+    ),
+  );
 }
 
 // ─── Menu Grid ──────────────────────────────────────────────
@@ -348,7 +349,7 @@ class _MenuGrid extends StatelessWidget {
     if (value is int) return value;
     if (value is String) return int.tryParse(value);
     return null;
-    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -394,7 +395,9 @@ class _MenuGrid extends StatelessWidget {
             if (userId == null) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('ID pengguna tidak ditemukan. Silakan login ulang.'),
+                  content: Text(
+                    'ID pengguna tidak ditemukan. Silakan login ulang.',
+                  ),
                 ),
               );
               return;
@@ -588,7 +591,8 @@ class _AktivitasRow extends StatelessWidget {
 
 // ─── Bottom Nav ─────────────────────────────────────────────
 class _BottomNav extends StatefulWidget {
-  const _BottomNav();
+  final Map<String, dynamic> user;
+  const _BottomNav({required this.user});
 
   @override
   State<_BottomNav> createState() => _BottomNavState();
@@ -615,7 +619,22 @@ class _BottomNavState extends State<_BottomNav> {
         children: List.generate(_items.length, (i) {
           final selected = i == _selected;
           return GestureDetector(
-            onTap: () => setState(() => _selected = i),
+            onTap: () {
+              setState(() => _selected = i);
+
+              if (i == 1) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProfileScreen(user: widget.user),
+                  ),
+                ).then((_) {
+                  if (mounted) {
+                    setState(() => _selected = 0);
+                  }
+                });
+              }
+            },
             behavior: HitTestBehavior.opaque,
             child: Column(
               mainAxisSize: MainAxisSize.min,
