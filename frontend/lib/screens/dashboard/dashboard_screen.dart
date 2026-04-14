@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../utils/palette.dart';
 import '../riwayat_akses/riwayat_akses_screen.dart';
+import '../peminjaman_lab/peminjaman_lab_screen.dart';
 
 // ─── Model ─────────────────────────────────────────────────
 class AktivitasItem {
@@ -368,7 +369,7 @@ class _MenuGrid extends StatelessWidget {
           subtitle: '3 aktif',
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const PeminjamanLabScreen()),
+            MaterialPageRoute(builder: (_) => PeminjamanLabScreen(user: user)),
           ),
         ),
         _MenuCard(
@@ -641,23 +642,6 @@ class _BottomNavState extends State<_BottomNav> {
   }
 }
 
-// ─── Placeholder Screens ────────────────────────────────────
-class PeminjamanLabScreen extends StatelessWidget {
-  const PeminjamanLabScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Peminjaman Lab'),
-        backgroundColor: Palette.blue,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: const Center(child: Text('Halaman Peminjaman Lab')),
-    );
-  }
-}
 
 class LaporanBarangScreen extends StatelessWidget {
   const LaporanBarangScreen({super.key});

@@ -14,8 +14,15 @@ def login():
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT id, nama, role, nim FROM users WHERE nama=%s AND nim=%s", (nama, nim))
+
+    cursor.execute("""
+        SELECT id, nama, role, nim, prodi, kelas
+        FROM users
+        WHERE nama = %s AND nim = %s
+    """, (nama, nim))
+
     user = cursor.fetchone()
+
     cursor.close()
     conn.close()
 
@@ -28,6 +35,8 @@ def login():
             "id": user['id'],
             "nama": user['nama'],
             "role": user['role'],
-            "nim": user['nim']
+            "nim": user['nim'],
+            "prodi": user['prodi'],
+            "kelas": user['kelas']
         }
     }), 200
