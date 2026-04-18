@@ -12,11 +12,15 @@ class ProfileScreen extends StatelessWidget {
     return text.isEmpty ? fallback : text;
   }
 
+  String _formatRole(String role) {
+    return role.isNotEmpty ? role[0].toUpperCase() + role.substring(1).toLowerCase() : role;
+  }
+
   @override
   Widget build(BuildContext context) {
     final nama = _value(user['nama'], fallback: 'Pengguna');
     final nim = _value(user['nim']);
-    final role = _value(user['role']);
+    final role = _formatRole(_value(user['role'])); // Terapkan format di sini
     final prodi = _value(user['prodi']);
     final kelas = _value(user['kelas']);
     final inisial = nama.isNotEmpty
@@ -93,7 +97,7 @@ class ProfileScreen extends StatelessWidget {
                   const Divider(height: 22),
                   _InfoRow(label: 'NIM', value: nim),
                   const Divider(height: 22),
-                  _InfoRow(label: 'Role', value: role),
+                  _InfoRow(label: 'Role', value: role), 
                   const Divider(height: 22),
                   _InfoRow(label: 'Prodi', value: prodi),
                   const Divider(height: 22),

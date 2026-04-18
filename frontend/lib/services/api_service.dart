@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = "http://10.80.3.248:5000";
+  static const String baseUrl = "http://192.168.1.110:5000";
 
   static Future<Map<String, dynamic>> login(String nama, String nim) async {
     try {

@@ -64,7 +64,6 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-  // ─── LOGIN FUNCTION ───────────────────────────────
   void _login() async {
     setState(() {
       _loading = true;
@@ -77,16 +76,13 @@ class _LoginScreenState extends State<LoginScreen>
         _nimController.text.trim(),
       );
 
-      // Jika berhasil
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => DashboardScreen(user: user)),
       );
     } catch (e) {
-      // Debugging lengkap
       debugPrint('Login gagal: ${e.toString()}');
 
-      // Menampilkan pesan error di UI
       if (e is Exception) {
         setState(() {
           _errorMessage = e.toString().replaceAll("Exception: ", "");
@@ -120,7 +116,6 @@ class _LoginScreenState extends State<LoginScreen>
                     children: [
                       const SizedBox(height: 64),
 
-                      // Logo
                       Container(
                         width: 70,
                         height: 70,
@@ -167,7 +162,6 @@ class _LoginScreenState extends State<LoginScreen>
 
                       const SizedBox(height: 40),
 
-                      // Card
                       Container(
                         padding: const EdgeInsets.all(28),
                         decoration: BoxDecoration(
@@ -209,7 +203,6 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                             const SizedBox(height: 28),
 
-                            // Error message
                             if (_errorMessage != null) ...[
                               Container(
                                 padding: const EdgeInsets.symmetric(
@@ -367,8 +360,6 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 }
-
-// ─── Animated Background ────────────────────────────────────────────────────
 
 class _AnimatedBackground extends StatelessWidget {
   final AnimationController controller;

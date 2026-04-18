@@ -31,7 +31,10 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
   void _loadData() {
     final userId = _parseUserId(widget.user['id']);
     if (userId != null) {
-      _future = LaporanBarangService().getByUser(userId);
+      // ✅ Sort data terbaru di atas berdasarkan id descending
+      _future = LaporanBarangService().getByUser(userId).then(
+        (list) => list..sort((a, b) => b.id.compareTo(a.id)),
+      );
     }
   }
 
@@ -187,16 +190,17 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // ✅ Judul "Laporan Barang X" dan badge status dalam satu Row yang sejajar
                             Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Expanded(
-                                  child: Text(
-                                    _formatTanggal(item.tanggal),
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: Palette.textDark,
-                                    ),
+                                Text(
+                                  'Laporan Barang ${index + 1}',  // Menampilkan Laporan Barang 1, Laporan Barang 2, dll.
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Palette.textDark,
                                   ),
                                 ),
                                 Container(
@@ -210,8 +214,8 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
                                   ),
                                   child: Text(
                                     item.keterangan == 'temuan'
-                                        ? 'Temuan'
-                                        : 'Hilang',
+                                        ? 'TEMUAN'
+                                        : 'HILANG',
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w600,
@@ -222,13 +226,34 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
                               ],
                             ),
                             const SizedBox(height: 8),
-                            Text(
-                              item.deskripsi.isEmpty ? '-' : item.deskripsi,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Palette.textDark,
-                              ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Tanggal Laporan: ${_formatTanggal(item.tanggal)}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Palette.textDark,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Deskripsi: ${item.deskripsi.isEmpty ? 'Tidak ada deskripsi' : item.deskripsi}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Palette.textMuted,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
                             if (item.fotoUrl != null && item.fotoUrl!.isNotEmpty) ...[
                               const SizedBox(height: 10),
                               ClipRRect(

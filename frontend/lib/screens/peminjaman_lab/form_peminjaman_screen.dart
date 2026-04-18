@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../utils/palette.dart';
-import 'peminjaman_lab_screen.dart';
+import 'peminjaman_lab_service.dart';
+import 'peminjaman_lab_model.dart';
 
 class FormPeminjamanScreen extends StatefulWidget {
   final Map<String, dynamic> user;

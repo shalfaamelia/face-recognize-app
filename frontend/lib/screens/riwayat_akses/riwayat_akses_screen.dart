@@ -1,88 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import '../../services/api_service.dart';
+import 'riwayat_akses_model.dart';
+import 'riwayat_akses_service.dart';
 import '../../utils/palette.dart';
 
-// ─── Model Log Akses ───────────────────────────────────────
-class LogAkses {
-  final int id;
-  final String kode;
-  final String nama;
-  final String nim;
-  final String prodi;
-  final String kelas;
-  final DateTime masuk;
-
-  LogAkses({
-    required this.id,
-    required this.kode,
-    required this.nama,
-    required this.nim,
-    required this.prodi,
-    required this.kelas,
-    required this.masuk,
-  });
-
-  factory LogAkses.fromJson(Map<String, dynamic> json) {
-    return LogAkses(
-      id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
-      kode: (json['kode'] ?? '').toString(),
-      nama: (json['nama'] ?? '').toString(),
-      nim: (json['nim'] ?? '').toString(),
-      prodi: (json['prodi'] ?? '').toString(),
-      kelas: (json['kelas'] ?? '').toString(),
-      masuk: _parseTanggal(json['masuk']),
-    );
-  }
-
-  static DateTime _parseTanggal(dynamic value) {
-    final raw = value.toString().trim();
-
-    // Coba format ISO dulu
-    final iso = DateTime.tryParse(raw);
-    if (iso != null) return iso;
-
-    // Coba format: Sat, 11 Apr 2026 15:54:36 GMT
-    try {
-      return DateFormat("EEE, dd MMM yyyy HH:mm:ss 'GMT'", 'en_US')
-          .parseUtc(raw)
-          .toLocal();
-    } catch (_) {}
-
-    // Coba format lain kalau ada
-    try {
-      return DateFormat("EEE, dd MMM yyyy HH:mm:ss", 'en_US')
-          .parse(raw)
-          .toLocal();
-    } catch (_) {}
-
-    throw FormatException('Invalid date format', raw);
-  }
-}
-
-// ─── Service API ────────────────────────────────────────────
-class MonitoringService {
-  Future<List<LogAkses>> fetchUserLogs(int userId) async {
-    final response = await http.get(
-      Uri.parse('${ApiService.baseUrl}/monitoring/$userId'),
-      headers: {'Content-Type': 'application/json'},
-    );
-
-    if (response.statusCode == 200) {
-      final dynamic decoded = json.decode(response.body);
-      if (decoded is List) {
-        return decoded.map((e) => LogAkses.fromJson(e)).toList();
-      }
-      return [];
-    } else {
-      throw Exception('Gagal memuat log akses: ${response.body}');
-    }
-  }
-}
-
-// ─── Halaman Riwayat Akses ─────────────────────────────────
 class RiwayatAksesScreen extends StatefulWidget {
   final int userId;
   const RiwayatAksesScreen({super.key, required this.userId});

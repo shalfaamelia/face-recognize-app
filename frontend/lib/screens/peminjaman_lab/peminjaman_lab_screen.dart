@@ -1,133 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import '../../services/api_service.dart';
 import '../../utils/palette.dart';
 import 'form_peminjaman_screen.dart';
-
-class PeminjamanItem {
-  final int id;
-  final int userId;
-  final String nama;
-  final String nim;
-  final String prodi;
-  final String kelas;
-  final String tanggal;
-  final String jamMulai;
-  final String jamSelesai;
-  final String keterangan;
-  final String status;
-
-  PeminjamanItem({
-    required this.id,
-    required this.userId,
-    required this.nama,
-    required this.nim,
-    required this.prodi,
-    required this.kelas,
-    required this.tanggal,
-    required this.jamMulai,
-    required this.jamSelesai,
-    required this.keterangan,
-    required this.status,
-  });
-
-  factory PeminjamanItem.fromJson(Map<String, dynamic> json) {
-    return PeminjamanItem(
-      id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
-      userId: json['user_id'] is int
-          ? json['user_id']
-          : int.parse(json['user_id'].toString()),
-      nama: (json['nama'] ?? '').toString(),
-      nim: (json['nim'] ?? '').toString(),
-      prodi: (json['prodi'] ?? '').toString(),
-      kelas: (json['kelas'] ?? '').toString(),
-      tanggal: (json['tanggal'] ?? '').toString(),
-      jamMulai: (json['jam_mulai'] ?? '').toString(),
-      jamSelesai: (json['jam_selesai'] ?? '').toString(),
-      keterangan: (json['keterangan'] ?? '').toString(),
-      status: (json['status'] ?? 'menunggu').toString(),
-    );
-  }
-}
-
-class PeminjamanService {
-  Future<List<PeminjamanItem>> getByUser(int userId) async {
-    final response = await http.get(
-      Uri.parse('${ApiService.baseUrl}/peminjaman/user/$userId'),
-    );
-
-    if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body);
-      return data.map((e) => PeminjamanItem.fromJson(e)).toList();
-    } else {
-      throw Exception('Gagal memuat data peminjaman');
-    }
-  }
-
-  Future<void> create({
-    required int userId,
-    required String tanggal,
-    required String jamMulai,
-    required String jamSelesai,
-    required String keterangan,
-  }) async {
-    final response = await http.post(
-      Uri.parse('${ApiService.baseUrl}/peminjaman'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'user_id': userId,
-        'tanggal': tanggal,
-        'jam_mulai': jamMulai,
-        'jam_selesai': jamSelesai,
-        'keterangan': keterangan,
-      }),
-    );
-
-    if (response.statusCode != 201) {
-      throw Exception(jsonDecode(response.body)['message']);
-    }
-  }
-
-  Future<void> update({
-    required int id,
-    required int userId,
-    required String tanggal,
-    required String jamMulai,
-    required String jamSelesai,
-    required String keterangan,
-  }) async {
-    final response = await http.put(
-      Uri.parse('${ApiService.baseUrl}/peminjaman/$id'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'user_id': userId,
-        'tanggal': tanggal,
-        'jam_mulai': jamMulai,
-        'jam_selesai': jamSelesai,
-        'keterangan': keterangan,
-      }),
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception(jsonDecode(response.body)['message']);
-    }
-  }
-
-  Future<void> delete({
-    required int id,
-    required int userId,
-  }) async {
-    final response = await http.delete(
-      Uri.parse('${ApiService.baseUrl}/peminjaman/$id?user_id=$userId'),
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception(jsonDecode(response.body)['message']);
-    }
-  }
-}
+import 'peminjaman_lab_service.dart';
+import 'peminjaman_lab_model.dart';
 
 class PeminjamanLabScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -155,7 +31,10 @@ class _PeminjamanLabScreenState extends State<PeminjamanLabScreen> {
   void _loadData() {
     final userId = _parseUserId(widget.user['id']);
     if (userId != null) {
-      _future = PeminjamanService().getByUser(userId);
+      // ✅ Sort data terbaru di atas berdasarkan id descending
+      _future = PeminjamanService().getByUser(userId).then(
+        (list) => list..sort((a, b) => b.id.compareTo(a.id)), // Menyortir berdasarkan id
+      );
     }
   }
 
@@ -242,6 +121,8 @@ class _PeminjamanLabScreenState extends State<PeminjamanLabScreen> {
         return Colors.red;
       case 'selesai':
         return Palette.blue;
+      case 'menunggu':
+        return Colors.blue;
       default:
         return Palette.orange;
     }
@@ -255,6 +136,8 @@ class _PeminjamanLabScreenState extends State<PeminjamanLabScreen> {
         return const Color(0xFFFFE5E5);
       case 'selesai':
         return Palette.blueLight;
+      case 'menunggu':
+        return const Color(0xFFE0F7FA); // Menambahkan warna biru muda untuk "Menunggu"
       default:
         return Palette.orangeLight;
     }
@@ -331,16 +214,17 @@ class _PeminjamanLabScreenState extends State<PeminjamanLabScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // ✅ Judul "Peminjaman X" dan badge status dalam satu Row yang sejajar
                             Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Expanded(
-                                  child: Text(
-                                    _formatTanggal(item.tanggal),
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: Palette.textDark,
-                                    ),
+                                Text(
+                                  'Peminjaman ${index + 1}',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Palette.textDark,
                                   ),
                                 ),
                                 Container(
@@ -353,7 +237,7 @@ class _PeminjamanLabScreenState extends State<PeminjamanLabScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    item.status,
+                                    item.status.toUpperCase(),
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w600,
@@ -364,27 +248,55 @@ class _PeminjamanLabScreenState extends State<PeminjamanLabScreen> {
                               ],
                             ),
                             const SizedBox(height: 8),
-                            Text(
-                              '${_formatJam(item.jamMulai)} - ${_formatJam(item.jamSelesai)}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Palette.textMuted,
-                              ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Tanggal Peminjaman: ${_formatTanggal(item.tanggal)}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Palette.textDark,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              item.keterangan.isEmpty ? '-' : item.keterangan,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Palette.textDark,
-                              ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Waktu Peminjaman: ${_formatJam(item.jamMulai)} - ${_formatJam(item.jamSelesai)} WIB',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Palette.textMuted,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Keterangan: ${item.keterangan.isEmpty ? 'Tidak ada keterangan' : item.keterangan}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Palette.textMuted,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 12),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
                                 OutlinedButton.icon(
-                                  onPressed: () => _goToForm(item: item),
+                                  onPressed: item.status.toLowerCase() == 'disetujui' || item.status.toLowerCase() == 'ditolak'
+                                      ? null
+                                      : () => _goToForm(item: item),
                                   icon: const Icon(Icons.edit, size: 16),
                                   label: const Text('Edit'),
                                 ),
@@ -394,7 +306,9 @@ class _PeminjamanLabScreenState extends State<PeminjamanLabScreen> {
                                     backgroundColor: Colors.red,
                                     foregroundColor: Colors.white,
                                   ),
-                                  onPressed: () => _deleteItem(item),
+                                  onPressed: item.status.toLowerCase() == 'disetujui' || item.status.toLowerCase() == 'ditolak'
+                                      ? null
+                                      : () => _deleteItem(item),
                                   icon: const Icon(Icons.delete, size: 16),
                                   label: const Text('Hapus'),
                                 ),
