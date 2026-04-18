@@ -5,7 +5,12 @@ import '../riwayat_akses/riwayat_akses_screen.dart';
 import '../peminjaman_lab/peminjaman_lab_screen.dart';
 import '../laporan_barang/laporan_barang_screen.dart';
 
-// ─── Model ─────────────────────────────────────────────────
+// ✅ SERVICE IMPORT
+import '../peminjaman_lab/peminjaman_lab_service.dart';
+import '../laporan_barang/laporan_barang_service.dart';
+import '../riwayat_akses/riwayat_akses_service.dart';
+
+// ─── Model Aktivitas ───────────────────────────────────────
 class AktivitasItem {
   final IconData icon;
   final Color iconColor;
@@ -29,46 +34,106 @@ class AktivitasItem {
 }
 
 // ─── Dashboard Screen ───────────────────────────────────────
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   final Map<String, dynamic> user;
   const DashboardScreen({super.key, required this.user});
 
-  static const _aktivitas = [
-    AktivitasItem(
-      icon: Icons.science_outlined,
-      iconColor: Palette.blue,
-      iconBg: Palette.blueLight,
-      judul: 'Lab Kimia Dasar',
-      waktu: 'Dipinjam · Hari ini, 09.00',
-      badge: 'Aktif',
-      badgeColor: Color(0xFF0B7A52),
-      badgeBg: Palette.greenLight,
-    ),
-    AktivitasItem(
-      icon: Icons.inventory_2_outlined,
-      iconColor: Palette.orange,
-      iconBg: Palette.orangeLight,
-      judul: 'Kalkulator ditemukan',
-      waktu: 'Laporan · Kemarin, 14.30',
-      badge: 'Baru',
-      badgeColor: Color(0xFFA3360F),
-      badgeBg: Palette.orangeLight,
-    ),
-    AktivitasItem(
-      icon: Icons.history_outlined,
-      iconColor: Palette.green,
-      iconBg: Palette.greenLight,
-      judul: 'Akses Lab Fisika',
-      waktu: 'Riwayat · Kemarin, 08.15',
-      badge: 'Selesai',
-      badgeColor: Color(0xFF0B7A52),
-      badgeBg: Palette.greenLight,
-    ),
-  ];
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  int peminjamanAktif = 0;
+  int totalAkses = 0;
+  int laporanBarang = 0;
+
+  List<AktivitasItem> aktivitas = [];
+
+  int? _parseUserId(dynamic value) {
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboard();
+  }
+
+  Future<void> _loadDashboard() async {
+    final userId = _parseUserId(widget.user['id']);
+    if (userId == null) return;
+
+    try {
+      final peminjaman = await PeminjamanService().getByUser(userId);
+      final laporan = await LaporanBarangService().getByUser(userId);
+      final akses = await MonitoringService().fetchUserLogs(userId);
+
+      // ✅ Statistik
+      peminjamanAktif = peminjaman
+          .where((e) => e.status.toLowerCase() == 'disetujui')
+          .length;
+
+      totalAkses = akses.length;
+
+      laporanBarang = laporan.length;
+
+      // ✅ Aktivitas terbaru
+      aktivitas = [
+        ...peminjaman
+            .take(2)
+            .map(
+              (e) => AktivitasItem(
+                icon: Icons.science_outlined,
+                iconColor: Palette.blue,
+                iconBg: Palette.blueLight,
+                judul: 'Lab ${e.keterangan}',
+                waktu: 'Peminjaman · ${e.tanggal}',
+                badge: e.status,
+                badgeColor: Palette.blue,
+                badgeBg: Palette.blueLight,
+              ),
+            ),
+        ...laporan
+            .take(2)
+            .map(
+              (e) => AktivitasItem(
+                icon: Icons.inventory_2_outlined,
+                iconColor: Palette.orange,
+                iconBg: Palette.orangeLight,
+                judul: 'Barang ${e.keterangan}',
+                waktu: 'Laporan · ${e.tanggal}',
+                badge: e.status,
+                badgeColor: Palette.orange,
+                badgeBg: Palette.orangeLight,
+              ),
+            ),
+        ...akses
+            .take(2)
+            .map(
+              (e) => AktivitasItem(
+                icon: Icons.history_outlined,
+                iconColor: Palette.green,
+                iconBg: Palette.greenLight,
+                judul: 'Akses Lab',
+                waktu: 'Masuk · ${e.masuk}',
+                badge: 'Riwayat',
+                badgeColor: Palette.green,
+                badgeBg: Palette.greenLight,
+              ),
+            ),
+      ];
+
+      setState(() {});
+    } catch (e) {
+      debugPrint("Error dashboard: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final String nama = (user['nama'] ?? 'Pengguna').toString();
+    final String nama = (widget.user['nama'] ?? 'Pengguna').toString();
     final String inisial = nama.isNotEmpty
         ? nama.trim().split(' ').map((w) => w[0]).take(2).join().toUpperCase()
         : 'U';
@@ -76,34 +141,49 @@ class DashboardScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Palette.bgPage,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _Header(nama: nama, inisial: inisial),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _StatRow(),
-                    const SizedBox(height: 20),
-                    _SectionLabel('Menu Utama'),
-                    const SizedBox(height: 10),
-                    _MenuGrid(user: user),
-                    const SizedBox(height: 20),
-                    _SectionLabel('Aktivitas Terbaru'),
-                    const SizedBox(height: 10),
-                    _AktivitasCard(items: _aktivitas),
-                    const SizedBox(height: 16),
-                  ],
+        child: RefreshIndicator(
+          onRefresh: _loadDashboard,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _Header(nama: nama, inisial: inisial),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _StatRow(
+                        aktif: peminjamanAktif,
+                        akses: totalAkses,
+                        laporan: laporanBarang,
+                      ),
+                      const SizedBox(height: 20),
+                      _SectionLabel('Menu Utama'),
+                      const SizedBox(height: 10),
+                      _MenuGrid(user: widget.user),
+                      const SizedBox(height: 20),
+                      _SectionLabel('Aktivitas Terbaru'),
+                      const SizedBox(height: 10),
+                      aktivitas.isEmpty
+                          ? const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(20),
+                                child: CircularProgressIndicator(),
+                              ),
+                            )
+                          : _AktivitasCard(items: aktivitas),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-      bottomNavigationBar: _BottomNav(user: user),
+      bottomNavigationBar: _BottomNav(user: widget.user),
     );
   }
 }
@@ -133,7 +213,6 @@ class _Header extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.white.withOpacity(0.75),
-                      fontWeight: FontWeight.w400,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -152,124 +231,52 @@ class _Header extends StatelessWidget {
                 backgroundColor: Colors.white.withOpacity(0.2),
                 child: Text(
                   inisial,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
+                  style: const TextStyle(color: Colors.white),
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Status Lab',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Laboratorium A · Aktif',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.25),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    _todayLabel(),
-                    style: const TextStyle(fontSize: 12, color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),
     );
   }
-
-  String _todayLabel() {
-    final now = DateTime.now();
-    const days = [
-      'Senin',
-      'Selasa',
-      'Rabu',
-      'Kamis',
-      'Jumat',
-      'Sabtu',
-      'Minggu',
-    ];
-    const months = [
-      '',
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Agu',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
-    ];
-    return '${days[now.weekday - 1]}, ${now.day} ${months[now.month]}';
-  }
 }
 
-// ─── Stat Row ───────────────────────────────────────────────
+// ─── STAT ─────────────────────────────────────────────────
 class _StatRow extends StatelessWidget {
+  final int aktif;
+  final int akses;
+  final int laporan;
+
+  const _StatRow({
+    required this.aktif,
+    required this.akses,
+    required this.laporan,
+  });
+
   @override
   Widget build(BuildContext context) {
     return Row(
-      children: const [
+      children: [
         Expanded(
           child: _StatCard(
-            value: '3',
+            value: aktif.toString(),
             label: 'Peminjaman\nAktif',
             color: Palette.blue,
           ),
         ),
-        SizedBox(width: 10),
+        const SizedBox(width: 10),
         Expanded(
           child: _StatCard(
-            value: '12',
-            label: 'Selesai\nBulan Ini',
+            value: akses.toString(),
+            label: 'Akses\nTotal',
             color: Palette.green,
           ),
         ),
-        SizedBox(width: 10),
+        const SizedBox(width: 10),
         Expanded(
           child: _StatCard(
-            value: '2',
+            value: laporan.toString(),
             label: 'Barang\nDilaporkan',
             color: Palette.orange,
           ),
@@ -283,6 +290,7 @@ class _StatCard extends StatelessWidget {
   final String value;
   final String label;
   final Color color;
+
   const _StatCard({
     required this.value,
     required this.label,
@@ -292,11 +300,10 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Palette.bgCard,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Palette.cardBorder),
       ),
       child: Column(
         children: [
@@ -304,7 +311,7 @@ class _StatCard extends StatelessWidget {
             value,
             style: TextStyle(
               fontSize: 20,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.bold,
               color: color,
             ),
           ),
@@ -312,11 +319,7 @@ class _StatCard extends StatelessWidget {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 10,
-              color: Palette.textMuted,
-              height: 1.3,
-            ),
+            style: const TextStyle(fontSize: 10),
           ),
         ],
       ),
@@ -324,20 +327,14 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-// ─── Section Label ──────────────────────────────────────────
+// ─── SECTION ──────────────────────────────────────────────
 class _SectionLabel extends StatelessWidget {
   final String text;
   const _SectionLabel(this.text);
 
   @override
-  Widget build(BuildContext context) => Text(
-    text,
-    style: const TextStyle(
-      fontSize: 13,
-      fontWeight: FontWeight.w500,
-      color: Palette.textMuted,
-    ),
-  );
+  Widget build(BuildContext context) =>
+      Text(text, style: const TextStyle(fontWeight: FontWeight.w500));
 }
 
 // ─── Menu Grid ──────────────────────────────────────────────
