@@ -7,13 +7,14 @@ class PeminjamanService {
   Future<List<PeminjamanItem>> getByUser(int userId) async {
     final response = await http.get(
       Uri.parse('${ApiService.baseUrl}/peminjaman/user/$userId'),
+      headers: ApiService.headers,
     );
 
     if (response.statusCode == 200) {
       final List data = jsonDecode(response.body);
       return data.map((e) => PeminjamanItem.fromJson(e)).toList();
     } else {
-      throw Exception('Gagal memuat data peminjaman');
+      throw Exception('Gagal memuat data peminjaman: ${response.body}');
     }
   }
 

@@ -5,38 +5,55 @@ login_bp = Blueprint('login', __name__)
 
 @login_bp.route('/login', methods=['POST'])
 def login():
-    data = request.get_json()
-    nama = data.get('nama')
-    nim = data.get('nim')
+    conn = None
+    cursor = None
 
-    if not nama or not nim:
-        return jsonify({"message": "Nama dan NIM wajib diisi"}), 400
+    try:
+        data = request.get_json(silent=True)
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+        if not data:
+            return jsonify({"message": "Request harus berupa JSON"}), 400
 
-    cursor.execute("""
-        SELECT id, nama, role, nim, prodi, kelas
-        FROM users
-        WHERE nama = %s AND nim = %s
-    """, (nama, nim))
+        nama = data.get('nama')
+        nim = data.get('nim')
 
-    user = cursor.fetchone()
+        if not nama or not nim:
+            return jsonify({"message": "Nama dan NIM wajib diisi"}), 400
 
-    cursor.close()
-    conn.close()
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
 
-    if not user:
-        return jsonify({"message": "User tidak ditemukan"}), 404
+        cursor.execute("""
+            SELECT id, nama, role, nim, prodi, kelas
+            FROM users
+            WHERE nama = %s AND nim = %s
+            LIMIT 1
+        """, (nama, nim))
 
-    return jsonify({
-        "message": "Login berhasil",
-        "user": {
-            "id": user['id'],
-            "nama": user['nama'],
-            "role": user['role'],
-            "nim": user['nim'],
-            "prodi": user['prodi'],
-            "kelas": user['kelas']
-        }
-    }), 200
+        user = cursor.fetchone()
+
+        if not user:
+            return jsonify({"message": "User tidak ditemukan"}), 404
+
+        return jsonify({
+            "message": "Login berhasil",
+            "user": {
+                "id": user["id"],
+                "nama": user["nama"],
+                "role": user["role"],
+                "nim": user["nim"],
+                "prodi": user["prodi"],
+                "kelas": user["kelas"]
+            }
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "message": f"Gagal login: {str(e)}"
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()

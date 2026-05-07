@@ -7,13 +7,14 @@ class LaporanBarangService {
   Future<List<LaporanBarangItem>> getByUser(int userId) async {
     final response = await http.get(
       Uri.parse('${ApiService.baseUrl}/laporan-barang/user/$userId'),
+      headers: ApiService.headers,
     );
 
     if (response.statusCode == 200) {
       final List data = jsonDecode(response.body);
       return data.map((e) => LaporanBarangItem.fromJson(e)).toList();
     } else {
-      throw Exception('Gagal memuat data laporan barang');
+      throw Exception('Gagal memuat data laporan barang: ${response.body}');
     }
   }
 

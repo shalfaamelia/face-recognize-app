@@ -6,8 +6,8 @@ import 'riwayat_akses_model.dart';
 class MonitoringService {
   Future<List<LogAkses>> fetchUserLogs(int userId) async {
     final response = await http.get(
-      Uri.parse('${ApiService.baseUrl}/monitoring/$userId'),
-      headers: {'Content-Type': 'application/json'},
+      Uri.parse('${ApiService.baseUrl}/monitoring_user?user_id=$userId'),
+      headers: ApiService.headers,
     );
 
     if (response.statusCode == 200) {

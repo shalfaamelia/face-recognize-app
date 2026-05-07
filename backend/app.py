@@ -12,13 +12,20 @@ from routes.laporan_barang import laporan_barang_bp
 app = Flask(__name__)
 CORS(app)
 
+# Mobile login tanpa prefix
 app.register_blueprint(login_bp)
-app.register_blueprint(monitoring_bp)
-app.register_blueprint(peminjaman_bp)
-app.register_blueprint(laporan_barang_bp)
+
+# Tambahkan /api prefix supaya endpoint sesuai Flutter
+app.register_blueprint(monitoring_bp, url_prefix='/api')
+app.register_blueprint(peminjaman_bp, url_prefix='/api')
+app.register_blueprint(laporan_barang_bp, url_prefix='/api')
 app.register_blueprint(user_bp, url_prefix='/api')
 app.register_blueprint(user_faces_bp, url_prefix='/api/user_faces') 
 app.register_blueprint(jadwal_bp, url_prefix='/api/jadwal')
+
+print("Registered routes:")
+for rule in app.url_map.iter_rules():
+    print(rule)
 
 @app.route('/')
 def index():

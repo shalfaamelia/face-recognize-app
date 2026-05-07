@@ -15,6 +15,7 @@ class _LoginScreenState extends State<LoginScreen>
     with TickerProviderStateMixin {
   final _namaController = TextEditingController();
   final _nimController = TextEditingController();
+
   bool _loading = false;
   String? _errorMessage;
   bool _namaFocused = false;
@@ -29,26 +30,39 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void initState() {
     super.initState();
+
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
     );
+
     _slideController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
+
     _orbitController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 14),
     )..repeat();
 
-    _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
-    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero)
-        .animate(
-          CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
-        );
+    _fadeAnim = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOut,
+    );
+
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _slideController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
 
     Future.delayed(const Duration(milliseconds: 100), () {
+      if (!mounted) return;
       _fadeController.forward();
       _slideController.forward();
     });
@@ -64,36 +78,45 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-  void _login() async {
+  Future<void> _login() async {
+    final nama = _namaController.text.trim();
+    final nim = _nimController.text.trim();
+
+    if (nama.isEmpty || nim.isEmpty) {
+      setState(() {
+        _errorMessage = 'Nama dan NIM wajib diisi.';
+      });
+      return;
+    }
+
     setState(() {
       _loading = true;
       _errorMessage = null;
     });
 
     try {
-      final user = await ApiService.login(
-        _namaController.text.trim(),
-        _nimController.text.trim(),
-      );
+      final user = await ApiService.login(nama, nim);
+
+      if (!mounted) return;
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => DashboardScreen(user: user)),
+        MaterialPageRoute(
+          builder: (_) => DashboardScreen(user: user),
+        ),
       );
     } catch (e) {
-      debugPrint('Login gagal: ${e.toString()}');
+      debugPrint('Login gagal: $e');
 
-      if (e is Exception) {
-        setState(() {
-          _errorMessage = e.toString().replaceAll("Exception: ", "");
-        });
-      } else {
-        setState(() {
-          _errorMessage = "Terjadi kesalahan tidak terduga";
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = e.toString().replaceAll('Exception: ', '');
+      });
     } finally {
-      setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -115,7 +138,6 @@ class _LoginScreenState extends State<LoginScreen>
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const SizedBox(height: 64),
-
                       Container(
                         width: 70,
                         height: 70,
@@ -136,9 +158,7 @@ class _LoginScreenState extends State<LoginScreen>
                           size: 34,
                         ),
                       ),
-
                       const SizedBox(height: 28),
-
                       const Text(
                         'Selamat Datang',
                         style: TextStyle(
@@ -159,9 +179,7 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                         textAlign: TextAlign.center,
                       ),
-
                       const SizedBox(height: 40),
-
                       Container(
                         padding: const EdgeInsets.all(28),
                         decoration: BoxDecoration(
@@ -187,8 +205,9 @@ class _LoginScreenState extends State<LoginScreen>
                               hint: 'Masukkan nama Anda',
                               icon: Icons.person_outline_rounded,
                               isFocused: _namaFocused,
-                              onFocusChange: (v) =>
-                                  setState(() => _namaFocused = v),
+                              onFocusChange: (v) {
+                                setState(() => _namaFocused = v);
+                              },
                             ),
                             const SizedBox(height: 20),
                             _buildInputField(
@@ -197,12 +216,12 @@ class _LoginScreenState extends State<LoginScreen>
                               hint: 'Nomor Induk Mahasiswa',
                               icon: Icons.badge_outlined,
                               isFocused: _nimFocused,
-                              onFocusChange: (v) =>
-                                  setState(() => _nimFocused = v),
+                              onFocusChange: (v) {
+                                setState(() => _nimFocused = v);
+                              },
                               keyboardType: TextInputType.number,
                             ),
                             const SizedBox(height: 28),
-
                             if (_errorMessage != null) ...[
                               Container(
                                 padding: const EdgeInsets.symmetric(
@@ -238,8 +257,6 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                               const SizedBox(height: 20),
                             ],
-
-                            // Button
                             SizedBox(
                               width: double.infinity,
                               height: 52,
@@ -255,16 +272,15 @@ class _LoginScreenState extends State<LoginScreen>
                                       ),
                                     )
                                   : ElevatedButton(
-                                      onPressed: _login,
+                                      onPressed: _loading ? null : _login,
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Palette.blue,
                                         foregroundColor: Colors.white,
                                         elevation: 0,
                                         shadowColor: Colors.transparent,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
                                         ),
                                       ),
                                       child: const Text(
@@ -280,11 +296,13 @@ class _LoginScreenState extends State<LoginScreen>
                           ],
                         ),
                       ),
-
                       const SizedBox(height: 32),
                       const Text(
                         'Portal Akademik • 2026',
-                        style: TextStyle(color: Palette.textHint, fontSize: 12),
+                        style: TextStyle(
+                          color: Palette.textHint,
+                          fontSize: 12,
+                        ),
                       ),
                       const SizedBox(height: 24),
                     ],
@@ -335,7 +353,10 @@ class _LoginScreenState extends State<LoginScreen>
             child: TextField(
               controller: controller,
               keyboardType: keyboardType,
-              style: const TextStyle(color: Palette.textDark, fontSize: 15),
+              style: const TextStyle(
+                color: Palette.textDark,
+                fontSize: 15,
+              ),
               decoration: InputDecoration(
                 hintText: hint,
                 hintStyle: const TextStyle(
@@ -363,26 +384,37 @@ class _LoginScreenState extends State<LoginScreen>
 
 class _AnimatedBackground extends StatelessWidget {
   final AnimationController controller;
-  const _AnimatedBackground({required this.controller});
+
+  const _AnimatedBackground({
+    required this.controller,
+  });
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+
     return AnimatedBuilder(
       animation: controller,
       builder: (_, __) {
         final t = controller.value * 2 * math.pi;
+
         return Stack(
           children: [
             Positioned(
               top: -80 + math.sin(t) * 20,
               right: -80 + math.cos(t * 0.7) * 15,
-              child: const _Orb(size: 300, color: Color(0xFFDBEAFE)),
+              child: const _Orb(
+                size: 300,
+                color: Color(0xFFDBEAFE),
+              ),
             ),
             Positioned(
               bottom: size.height * 0.1 + math.sin(t * 0.8) * 15,
               left: -60 + math.cos(t * 0.6) * 12,
-              child: const _Orb(size: 200, color: Color(0xFFBFDBFE)),
+              child: const _Orb(
+                size: 200,
+                color: Color(0xFFBFDBFE),
+              ),
             ),
           ],
         );
@@ -394,14 +426,21 @@ class _AnimatedBackground extends StatelessWidget {
 class _Orb extends StatelessWidget {
   final double size;
   final Color color;
-  const _Orb({required this.size, required this.color});
+
+  const _Orb({
+    required this.size,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+      ),
     );
   }
 }
