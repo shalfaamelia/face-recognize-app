@@ -1,3 +1,5 @@
+import '../../services/api_service.dart';
+
 class LaporanBarangItem {
   final int id;
   final int userId;
@@ -42,7 +44,26 @@ class LaporanBarangItem {
       deskripsi: (json['deskripsi'] ?? '').toString(),
       status: (json['status'] ?? 'baru').toString(),
       foto: json['foto']?.toString(),
-      fotoUrl: json['foto_url']?.toString(),
+      fotoUrl: _normalizeFotoUrl(json['foto_url']?.toString()),
     );
+  }
+
+  static String? _normalizeFotoUrl(String? url) {
+    if (url == null || url.isEmpty) return null;
+
+    final trimmed = url.trim();
+    if (trimmed.startsWith('http://')) {
+      return trimmed.replaceFirst('http://', 'https://');
+    }
+    if (trimmed.startsWith('//')) {
+      return 'https:$trimmed';
+    }
+    if (trimmed.startsWith('/api/')) {
+      return '${ApiService.baseUrl}$trimmed';
+    }
+    if (trimmed.startsWith('api/')) {
+      return '${ApiService.baseUrl}/$trimmed';
+    }
+    return trimmed;
   }
 }

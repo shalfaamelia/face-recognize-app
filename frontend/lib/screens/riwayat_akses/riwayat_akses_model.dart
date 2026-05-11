@@ -38,15 +38,25 @@ class LogAkses {
     if (iso != null) return iso;
 
     try {
-      return DateFormat("EEE, dd MMM yyyy HH:mm:ss 'GMT'", 'en_US')
-          .parseUtc(raw)
-          .toLocal();
+      return DateFormat(
+        "EEE, dd MMM yyyy HH:mm:ss 'GMT'",
+        'en_US',
+      ).parseUtc(raw).toLocal();
     } catch (_) {}
 
     try {
-      return DateFormat("EEE, dd MMM yyyy HH:mm:ss", 'en_US')
-          .parse(raw)
-          .toLocal();
+      return DateFormat(
+        "EEE, dd MMM yyyy HH:mm:ss",
+        'en_US',
+      ).parse(raw).toLocal();
+    } catch (_) {}
+
+    try {
+      return DateFormat('yyyy/MM/dd HH:mm:ss').parse(raw).toLocal();
+    } catch (_) {}
+
+    try {
+      return DateFormat('yyyy-MM-dd HH:mm:ss').parse(raw).toLocal();
     } catch (_) {}
 
     throw FormatException('Invalid date format', raw);

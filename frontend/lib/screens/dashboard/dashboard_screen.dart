@@ -53,7 +53,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         index: _selectedTab,
         children: [
           _HomeTab(user: widget.user),
-          ProfileScreen(user: widget.user),
+          ProfileScreen(profile: widget.user),
         ],
       ),
       bottomNavigationBar: _BottomNav(

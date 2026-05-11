@@ -10,14 +10,11 @@ class FormLaporanBarangScreen extends StatefulWidget {
   final Map<String, dynamic> user;
   final LaporanBarangItem? item;
 
-  const FormLaporanBarangScreen({
-    super.key,
-    required this.user,
-    this.item,
-  });
+  const FormLaporanBarangScreen({super.key, required this.user, this.item});
 
   @override
-  State<FormLaporanBarangScreen> createState() => _FormLaporanBarangScreenState();
+  State<FormLaporanBarangScreen> createState() =>
+      _FormLaporanBarangScreenState();
 }
 
 class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
@@ -74,7 +71,10 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
 
     if (image != null) {
       setState(() {
@@ -96,17 +96,17 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tanggal wajib dipilih')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Tanggal wajib dipilih')));
       return;
     }
 
     final userId = _parseUserId(widget.user['id']);
     if (userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ID user tidak ditemukan')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('ID user tidak ditemukan')));
       return;
     }
 
@@ -147,9 +147,9 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal simpan: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal simpan: $e')));
     } finally {
       if (mounted) {
         setState(() {
@@ -163,7 +163,10 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: Palette.textMuted)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: Palette.textMuted),
+        ),
         const SizedBox(height: 6),
         TextFormField(
           initialValue: value,
@@ -171,10 +174,11 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
           decoration: InputDecoration(
             filled: true,
             fillColor: const Color(0xFFF6F7FB),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 14,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           ),
         ),
       ],
@@ -191,7 +195,9 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
     return Scaffold(
       backgroundColor: Palette.bgPage,
       appBar: AppBar(
-        title: Text(widget.item == null ? 'Tambah Pengajuan Baru' : 'Edit Pengajuan'),
+        title: Text(
+          widget.item == null ? 'Tambah Pengajuan Baru' : 'Edit Pengajuan',
+        ),
         backgroundColor: Palette.blue,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -213,7 +219,10 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Waktu', style: TextStyle(fontSize: 12, color: Palette.textMuted)),
+                  const Text(
+                    'Waktu',
+                    style: TextStyle(fontSize: 12, color: Palette.textMuted),
+                  ),
                   const SizedBox(height: 6),
                   InkWell(
                     onTap: _pickDate,
@@ -225,10 +234,14 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 14,
+                          ),
                         ),
                         validator: (_) {
-                          if (_selectedDate == null) return 'Tanggal wajib dipilih';
+                          if (_selectedDate == null)
+                            return 'Tanggal wajib dipilih';
                           return null;
                         },
                       ),
@@ -240,8 +253,14 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
               DropdownButtonFormField<String>(
                 initialValue: _selectedKeterangan,
                 items: const [
-                  DropdownMenuItem(value: 'temuan', child: Text('Temuan Barang')),
-                  DropdownMenuItem(value: 'hilang', child: Text('Hilang Barang')),
+                  DropdownMenuItem(
+                    value: 'temuan',
+                    child: Text('Temuan Barang'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'hilang',
+                    child: Text('Hilang Barang'),
+                  ),
                 ],
                 decoration: InputDecoration(
                   labelText: 'Keterangan',
@@ -308,7 +327,8 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
                           fit: BoxFit.cover,
                         ),
                       )
-                    else if (widget.item?.fotoUrl != null && widget.item!.fotoUrl!.isNotEmpty)
+                    else if (widget.item?.fotoUrl != null &&
+                        widget.item!.fotoUrl!.isNotEmpty)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: Image.network(
@@ -316,6 +336,32 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
                           width: 120,
                           height: 120,
                           fit: BoxFit.cover,
+                          loadingBuilder: (context, child, progress) {
+                            if (progress == null) return child;
+                            return Container(
+                              width: 120,
+                              height: 120,
+                              color: Palette.bgField,
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: 120,
+                              height: 120,
+                              color: Palette.bgField,
+                              child: const Center(
+                                child: Icon(
+                                  Icons.broken_image,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
                   ],
@@ -334,9 +380,7 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(
-                    _isSaving ? 'Menyimpan...' : 'Simpan Pengajuan',
-                  ),
+                  child: Text(_isSaving ? 'Menyimpan...' : 'Simpan Pengajuan'),
                 ),
               ),
             ],

@@ -32,9 +32,9 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
     final userId = _parseUserId(widget.user['id']);
     if (userId != null) {
       // ✅ Sort data terbaru di atas berdasarkan id descending
-      _future = LaporanBarangService().getByUser(userId).then(
-        (list) => list..sort((a, b) => b.id.compareTo(a.id)),
-      );
+      _future = LaporanBarangService()
+          .getByUser(userId)
+          .then((list) => list..sort((a, b) => b.id.compareTo(a.id)));
     }
   }
 
@@ -49,10 +49,7 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => FormLaporanBarangScreen(
-          user: widget.user,
-          item: item,
-        ),
+        builder: (_) => FormLaporanBarangScreen(user: widget.user, item: item),
       ),
     );
 
@@ -88,15 +85,15 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
     try {
       await LaporanBarangService().delete(id: item.id, userId: userId);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Laporan berhasil dihapus')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Laporan berhasil dihapus')));
       _refresh();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal hapus: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal hapus: $e')));
     }
   }
 
@@ -114,9 +111,7 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
   }
 
   Color _jenisBg(String jenis) {
-    return jenis == 'temuan'
-        ? Palette.greenLight
-        : const Color(0xFFFFE5E5);
+    return jenis == 'temuan' ? Palette.greenLight : const Color(0xFFFFE5E5);
   }
 
   @override
@@ -196,7 +191,7 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Text(
-                                  'Laporan Barang ${index + 1}',  // Menampilkan Laporan Barang 1, Laporan Barang 2, dll.
+                                  'Laporan Barang ${index + 1}', // Menampilkan Laporan Barang 1, Laporan Barang 2, dll.
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -254,7 +249,8 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
                               ],
                             ),
                             const SizedBox(height: 12),
-                            if (item.fotoUrl != null && item.fotoUrl!.isNotEmpty) ...[
+                            if (item.fotoUrl != null &&
+                                item.fotoUrl!.isNotEmpty) ...[
                               const SizedBox(height: 10),
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
@@ -263,6 +259,32 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
                                   height: 120,
                                   width: double.infinity,
                                   fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, progress) {
+                                    if (progress == null) return child;
+                                    return Container(
+                                      height: 120,
+                                      width: double.infinity,
+                                      color: Palette.bgField,
+                                      child: const Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      height: 120,
+                                      width: double.infinity,
+                                      color: Palette.bgField,
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.broken_image,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
                               ),
                             ],

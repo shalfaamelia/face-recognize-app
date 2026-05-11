@@ -269,12 +269,29 @@ def update_user(user_id):
     status = data.get('status')
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     try:
         cursor.execute("SELECT * FROM users WHERE id=%s", (user_id,))
         user = cursor.fetchone()
         if not user:
             return jsonify({"message": "User tidak ditemukan"}), 404
+
+        if role is None:
+            role = user.get('role')
+        if nim is None:
+            nim = user.get('nim')
+        if nip is None:
+            nip = user.get('nip')
+        if prodi is None:
+            prodi = user.get('prodi')
+        if kelas is None:
+            kelas = user.get('kelas')
+        if email is None:
+            email = user.get('email')
+        if password is None:
+            password = user.get('password')
+        if status is None:
+            status = user.get('status')
 
         if role == 'mahasiswa':
             email = None
@@ -292,6 +309,12 @@ def update_user(user_id):
             user_id
         ))
         conn.commit()
+
+        cursor.execute(
+            "SELECT id, nama, role, nim, prodi, kelas, email FROM users WHERE id=%s",
+            (user_id,)
+        )
+        updated_user = cursor.fetchone()
     except Exception as e:
         conn.rollback()
         return jsonify({"message": f"Gagal update user: {str(e)}"}), 500
@@ -299,7 +322,15 @@ def update_user(user_id):
         cursor.close()
         conn.close()
 
-    return jsonify({"message": "User berhasil diupdate"}), 200
+    return jsonify({
+        'id': updated_user['id'],
+        'nama': updated_user['nama'],
+        'role': updated_user['role'],
+        'nim': updated_user['nim'],
+        'prodi': updated_user['prodi'],
+        'kelas': updated_user['kelas'],
+        'email': updated_user['email'],
+    }), 200
 
 # ===============================
 # DELETE USER
