@@ -52,17 +52,30 @@ class LaporanBarangItem {
     if (url == null || url.isEmpty) return null;
 
     final trimmed = url.trim();
-    if (trimmed.startsWith('http://')) {
-      return trimmed.replaceFirst('http://', 'https://');
-    }
+    final appBase = ApiService.loginBaseUrl.replaceFirst(RegExp(r'/+$'), '');
     if (trimmed.startsWith('//')) {
       return 'https:$trimmed';
     }
     if (trimmed.startsWith('/api/')) {
-      return '${ApiService.baseUrl}$trimmed';
+      return '$appBase$trimmed';
     }
     if (trimmed.startsWith('api/')) {
-      return '${ApiService.baseUrl}/$trimmed';
+      return '$appBase/$trimmed';
+    }
+    if (trimmed.startsWith('/')) {
+      return '$appBase$trimmed';
+    }
+
+    final uri = Uri.tryParse(trimmed);
+    if (uri != null && uri.hasScheme) {
+      final appBaseUri = Uri.tryParse(appBase);
+      if (appBaseUri != null &&
+          uri.scheme == 'http' &&
+          appBaseUri.scheme == 'https' &&
+          uri.host == appBaseUri.host) {
+        return uri.replace(scheme: 'https').toString();
+      }
+      return trimmed;
     }
     return trimmed;
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../utils/palette.dart';
+import '../login/login_screen.dart';
 import 'profile_service.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -135,6 +136,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return role.isNotEmpty
         ? role[0].toUpperCase() + role.substring(1).toLowerCase()
         : role;
+  }
+
+  void _logout() {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
   }
 
   @override
@@ -278,6 +286,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Palette.blue,
                         side: const BorderSide(color: Palette.blue),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: OutlinedButton.icon(
+                      onPressed: _logout,
+                      icon: const Icon(Icons.logout_rounded),
+                      label: const Text('Logout'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red.shade600,
+                        side: BorderSide(color: Colors.red.shade300),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),

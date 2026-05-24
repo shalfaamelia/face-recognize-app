@@ -1,6 +1,6 @@
 import os
 import uuid
-from flask import Blueprint, request, jsonify, send_from_directory
+from flask import Blueprint, request, jsonify, send_from_directory, url_for
 from werkzeug.utils import secure_filename
 from db import get_db_connection
 
@@ -10,11 +10,43 @@ UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'uploads', 'lapora
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+
+# =========================
+# HELPER
+# =========================
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
+def format_laporan_barang_row(row):
+    if row.get('tanggal'):
+        row['tanggal'] = row['tanggal'].isoformat()
+
+    if row.get('foto'):
+        row['foto_url'] = url_for('laporan_barang.get_laporan_barang_file', filename=row['foto'], _external=True)
+    else:
+        row['foto_url'] = None
+
+    return row
+
+
+def append_date_filter(query, params):
+    start_date = request.args.get('startDate')
+    end_date = request.args.get('endDate')
+
+    if start_date:
+        query += " WHERE tanggal >= %s" if "WHERE" not in query.upper() else " AND tanggal >= %s"
+        params.append(start_date)
+
+    if end_date:
+        query += " WHERE tanggal <= %s" if "WHERE" not in query.upper() else " AND tanggal <= %s"
+        params.append(end_date)
+
+    return query, params
+
+
 # =========================
-# CREATE LAPORAN BARANG
+# CREATE LAPORAN BARANG (MOBILE)
 # =========================
 @laporan_barang_bp.route('/laporan-barang', methods=['POST'])
 def create_laporan_barang():
@@ -80,8 +112,9 @@ def create_laporan_barang():
         cursor.close()
         conn.close()
 
+
 # =========================
-# GET LAPORAN BARANG PER USER
+# GET LAPORAN BARANG PER USER (MOBILE)
 # =========================
 @laporan_barang_bp.route('/laporan-barang/user/<int:user_id>', methods=['GET'])
 def get_laporan_barang_by_user(user_id):
@@ -91,21 +124,15 @@ def get_laporan_barang_by_user(user_id):
     try:
         cursor.execute("""
             SELECT id, user_id, nama, nim, kelas, prodi, tanggal,
-                   keterangan, deskripsi, foto, status
+                   keterangan, deskripsi, foto, status,
+                   created_at, updated_at
             FROM laporan_barang
             WHERE user_id = %s
             ORDER BY tanggal DESC, id DESC
         """, (user_id,))
         rows = cursor.fetchall()
 
-        for row in rows:
-            if row.get('tanggal'):
-                row['tanggal'] = row['tanggal'].isoformat()
-
-            if row.get('foto'):
-                row['foto_url'] = f"{request.host_url.rstrip('/')}/laporan-barang/uploads/{row['foto']}"
-            else:
-                row['foto_url'] = None
+        rows = [format_laporan_barang_row(row) for row in rows]
 
         return jsonify(rows), 200
 
@@ -115,8 +142,9 @@ def get_laporan_barang_by_user(user_id):
         cursor.close()
         conn.close()
 
+
 # =========================
-# UPDATE LAPORAN BARANG
+# UPDATE LAPORAN BARANG (MOBILE)
 # =========================
 @laporan_barang_bp.route('/laporan-barang/<int:laporan_id>', methods=['PUT'])
 def update_laporan_barang(laporan_id):
@@ -137,7 +165,7 @@ def update_laporan_barang(laporan_id):
 
     try:
         cursor.execute("""
-            SELECT id, foto
+            SELECT id, foto, status
             FROM laporan_barang
             WHERE id = %s AND user_id = %s
         """, (laporan_id, user_id))
@@ -166,7 +194,8 @@ def update_laporan_barang(laporan_id):
             SET tanggal = %s,
                 keterangan = %s,
                 deskripsi = %s,
-                foto = %s
+                foto = %s,
+                updated_at = CURRENT_TIMESTAMP
             WHERE id = %s AND user_id = %s
         """, (
             tanggal,
@@ -187,8 +216,9 @@ def update_laporan_barang(laporan_id):
         cursor.close()
         conn.close()
 
+
 # =========================
-# DELETE LAPORAN BARANG
+# DELETE LAPORAN BARANG (MOBILE)
 # =========================
 @laporan_barang_bp.route('/laporan-barang/<int:laporan_id>', methods=['DELETE'])
 def delete_laporan_barang(laporan_id):
@@ -230,6 +260,73 @@ def delete_laporan_barang(laporan_id):
     finally:
         cursor.close()
         conn.close()
+
+
+# =========================
+# GET SEMUA LAPORAN BARANG (WEB)
+# semua laporan dari mobile tampil di web
+# =========================
+@laporan_barang_bp.route('/laporan/barang', methods=['GET'])
+def get_all_laporan_barang():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        query = """
+            SELECT id, user_id, nama, nim, kelas, prodi, tanggal,
+                   keterangan, deskripsi, foto, status,
+                   created_at, updated_at
+            FROM laporan_barang
+        """
+        params = []
+        query, params = append_date_filter(query, params)
+        query += " ORDER BY tanggal DESC, id DESC"
+
+        cursor.execute(query, tuple(params))
+        rows = cursor.fetchall()
+
+        rows = [format_laporan_barang_row(row) for row in rows]
+
+        return jsonify(rows), 200
+
+    except Exception as e:
+        return jsonify({"message": f"Gagal mengambil semua laporan barang: {str(e)}"}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# =========================
+# DETAIL LAPORAN BARANG (WEB)
+# =========================
+@laporan_barang_bp.route('/laporan/barang/<int:laporan_id>', methods=['GET'])
+def get_detail_laporan_barang(laporan_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            SELECT id, user_id, nama, nim, kelas, prodi, tanggal,
+                   keterangan, deskripsi, foto, status,
+                   created_at, updated_at
+            FROM laporan_barang
+            WHERE id = %s
+        """, (laporan_id,))
+        row = cursor.fetchone()
+
+        if not row:
+            return jsonify({"message": "Data laporan barang tidak ditemukan"}), 404
+
+        row = format_laporan_barang_row(row)
+
+        return jsonify(row), 200
+
+    except Exception as e:
+        return jsonify({"message": f"Gagal mengambil detail laporan barang: {str(e)}"}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
 
 # =========================
 # PREVIEW FOTO

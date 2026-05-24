@@ -4,6 +4,21 @@ from db import get_db_connection
 
 monitoring_bp = Blueprint('monitoring', __name__)
 
+
+def append_date_filter(query, params, column):
+    start_date = request.args.get('startDate')
+    end_date = request.args.get('endDate')
+
+    if start_date:
+        query += f" AND DATE({column}) >= %s"
+        params.append(start_date)
+
+    if end_date:
+        query += f" AND DATE({column}) <= %s"
+        params.append(end_date)
+
+    return query, params
+
 # ===============================
 # GET ALL LOGS
 # ===============================
@@ -12,15 +27,20 @@ def get_monitoring():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     try:
-        cursor.execute("""
+        query = """
             SELECT id, kode, nama, nim, prodi, kelas, masuk
             FROM log_masuk
-            ORDER BY masuk DESC
-        """)
+            WHERE 1=1
+        """
+        params = []
+        query, params = append_date_filter(query, params, 'masuk')
+        query += " ORDER BY masuk DESC"
+
+        cursor.execute(query, tuple(params))
         logs = cursor.fetchall()
         for log in logs:
             if log.get('masuk'):
-                log['masuk'] = log['masuk'].isoformat()
+                log['masuk'] = log['masuk'].strftime('%Y/%m/%d %H:%M:%S')
     except Exception as e:
         return jsonify({"message": f"Failed to fetch logs: {str(e)}"}), 500
     finally:
@@ -29,8 +49,11 @@ def get_monitoring():
     return jsonify(logs)
 
 # ===============================
-# GET LOGS FOR SPECIFIC USER (query param)
+# GET ALL LOGS (ALIAS FOR LAPORAN AKSES LAB)
 # ===============================
+@monitoring_bp.route('/laporan/akses', methods=['GET'])
+def get_laporan_akses_lab():
+    return get_monitoring()
 @monitoring_bp.route('/monitoring_user', methods=['GET'])
 def monitoring_user_query():
     user_id = request.args.get('user_id', type=int)
@@ -55,7 +78,7 @@ def get_user_monitoring(user_id):
         logs = cursor.fetchall()
         for log in logs:
             if log.get('masuk'):
-                log['masuk'] = log['masuk'].isoformat()
+                log['masuk'] = log['masuk'].strftime('%Y/%m/%d %H:%M:%S')
     except Exception as e:
         return jsonify({"message": f"Failed to fetch logs: {str(e)}"}), 500
     finally:
