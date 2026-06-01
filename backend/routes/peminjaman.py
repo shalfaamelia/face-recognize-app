@@ -45,7 +45,7 @@ def create_peminjaman():
 
     try:
         cursor.execute("""
-            SELECT id, nama, nim, prodi, kelas, role, status
+            SELECT id, nama, nim, prodi, kelas, role
             FROM users
             WHERE id = %s
         """, (user_id,))
@@ -53,9 +53,6 @@ def create_peminjaman():
 
         if not user:
             return jsonify({"message": "User tidak ditemukan"}), 404
-
-        if user['status'] != 'aktif':
-            return jsonify({"message": "User tidak aktif"}), 403
 
         if user['role'] != 'mahasiswa':
             return jsonify({"message": "Hanya mahasiswa yang dapat mengajukan peminjaman"}), 403

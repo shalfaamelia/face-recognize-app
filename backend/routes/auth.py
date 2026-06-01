@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify
 from db import get_db_connection
 from utils.auth_guard import create_access_token, get_current_user
+import hashlib
+import re
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -15,9 +17,21 @@ def build_permissions(role):
     }
 
 
+def hash_password_md5(password):
+    if not password:
+        return None
+
+    password = str(password)
+
+    if re.fullmatch(r'[a-fA-F0-9]{32}', password):
+        return password.lower()
+
+    return hashlib.md5(password.encode('utf-8')).hexdigest()
+
+
 @auth_bp.route('/auth/login', methods=['POST'])
 def login():
-    data = request.get_json()
+    data = request.get_json() or {}
 
     email = data.get('email')
     password = data.get('password')
@@ -25,12 +39,14 @@ def login():
     if not email or not password:
         return jsonify({"message": "Email dan password wajib diisi"}), 400
 
+    hashed_password = hash_password_md5(password)
+
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
     try:
         cursor.execute("""
-            SELECT id, kode, nama, role, email, password, status
+            SELECT id, kode, nama, role, email, password
             FROM users
             WHERE email = %s
             LIMIT 1
@@ -43,11 +59,7 @@ def login():
         if user['role'] == 'mahasiswa':
             return jsonify({"message": "Mahasiswa tidak dapat login ke web"}), 403
 
-        if user['status'] != 'aktif':
-            return jsonify({"message": "Akun tidak aktif"}), 403
-
-        # sementara cocok dengan struktur DB kamu saat ini (plaintext password)
-        if user['password'] != password:
+        if user['password'] != hashed_password:
             return jsonify({"message": "Email atau password salah"}), 401
 
         token = create_access_token(user)
@@ -67,6 +79,7 @@ def login():
 
     except Exception as e:
         return jsonify({"message": f"Gagal login: {str(e)}"}), 500
+
     finally:
         cursor.close()
         conn.close()
@@ -75,6 +88,7 @@ def login():
 @auth_bp.route('/auth/me', methods=['GET'])
 def me():
     user, error = get_current_user()
+
     if error:
         return jsonify({"message": error}), 401
 
@@ -93,6 +107,7 @@ def me():
 @auth_bp.route('/auth/profile', methods=['GET'])
 def get_profile():
     user, error = get_current_user()
+
     if error:
         return jsonify({"message": error}), 401
 
@@ -101,7 +116,7 @@ def get_profile():
 
     try:
         cursor.execute("""
-            SELECT id, kode, nama, role, email, nip, status
+            SELECT id, kode, nama, role, email, nip, nim, prodi, kelas
             FROM users
             WHERE id = %s
         """, (user['id'],))
@@ -118,12 +133,15 @@ def get_profile():
                 "role": profile['role'],
                 "email": profile['email'],
                 "nip": profile['nip'],
-                "status": profile['status']
+                "nim": profile['nim'],
+                "prodi": profile['prodi'],
+                "kelas": profile['kelas'],
             }
         }), 200
 
     except Exception as e:
         return jsonify({"message": f"Gagal mengambil profile: {str(e)}"}), 500
+
     finally:
         cursor.close()
         conn.close()
@@ -132,42 +150,70 @@ def get_profile():
 @auth_bp.route('/auth/profile', methods=['PUT'])
 def update_profile():
     user, error = get_current_user()
+
     if error:
         return jsonify({"message": error}), 401
 
-    data = request.get_json()
+    data = request.get_json() or {}
+
     nama = data.get('nama')
     email = data.get('email')
     password = data.get('password')
+    nip = data.get('nip')
+    nim = data.get('nim')
+    prodi = data.get('prodi')
+    kelas = data.get('kelas')
 
-    if not nama or not email:
-        return jsonify({"message": "Nama dan email wajib diisi"}), 400
+    if not nama:
+        return jsonify({"message": "Nama wajib diisi"}), 400
+
+    if user['role'] != 'mahasiswa' and not email:
+        return jsonify({"message": "Email wajib diisi"}), 400
+
+    if user['role'] == 'mahasiswa':
+        if not nim or not prodi or not kelas:
+            return jsonify({"message": "NIM, prodi, dan kelas wajib diisi"}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
     try:
-        cursor.execute("SELECT id FROM users WHERE email=%s AND id != %s", (email, user['id']))
-        if cursor.fetchone():
-            return jsonify({"message": f"Email '{email}' sudah terdaftar"}), 400
+        if user['role'] != 'mahasiswa':
+            cursor.execute(
+                "SELECT id FROM users WHERE email=%s AND id != %s",
+                (email, user['id'])
+            )
 
-        if password:
-            cursor.execute("""
-                UPDATE users
-                SET nama=%s, email=%s, password=%s
-                WHERE id=%s
-            """, (nama, email, password, user['id']))
+            if cursor.fetchone():
+                return jsonify({"message": f"Email '{email}' sudah terdaftar"}), 400
+
+        cursor.execute(
+            "SELECT * FROM users WHERE id = %s",
+            (user['id'],)
+        )
+        existing_user = cursor.fetchone()
+
+        if password and str(password).strip() != '':
+            hashed_password = hash_password_md5(password)
         else:
-            cursor.execute("""
-                UPDATE users
-                SET nama=%s, email=%s
-                WHERE id=%s
-            """, (nama, email, user['id']))
+            hashed_password = existing_user.get('password')
+
+        email = email if email is not None else existing_user.get('email')
+        nip = nip if nip is not None else existing_user.get('nip')
+        nim = nim if nim is not None else existing_user.get('nim')
+        prodi = prodi if prodi is not None else existing_user.get('prodi')
+        kelas = kelas if kelas is not None else existing_user.get('kelas')
+
+        cursor.execute("""
+            UPDATE users
+            SET nama=%s, email=%s, password=%s, nip=%s, nim=%s, prodi=%s, kelas=%s
+            WHERE id=%s
+        """, (nama, email, hashed_password, nip, nim, prodi, kelas, user['id']))
 
         conn.commit()
 
         cursor.execute("""
-            SELECT id, kode, nama, role, email, nip, status
+            SELECT id, kode, nama, role, email, nip, nim, prodi, kelas
             FROM users
             WHERE id = %s
         """, (user['id'],))
@@ -181,14 +227,14 @@ def update_profile():
                 "nama": updated_profile['nama'],
                 "role": updated_profile['role'],
                 "email": updated_profile['email'],
-                "nip": updated_profile['nip'],
-                "status": updated_profile['status']
+                "nip": updated_profile['nip']
             }
         }), 200
 
     except Exception as e:
         conn.rollback()
         return jsonify({"message": f"Gagal update profile: {str(e)}"}), 500
+
     finally:
         cursor.close()
         conn.close()

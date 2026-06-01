@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:math' as math;
 import '../../services/api_service.dart';
 import '../../utils/palette.dart';
@@ -46,20 +47,12 @@ class _LoginScreenState extends State<LoginScreen>
       duration: const Duration(seconds: 14),
     )..repeat();
 
-    _fadeAnim = CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeOut,
-    );
+    _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
 
-    _slideAnim = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _slideController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
+    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero)
+        .animate(
+          CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
+        );
 
     Future.delayed(const Duration(milliseconds: 100), () {
       if (!mounted) return;
@@ -89,6 +82,13 @@ class _LoginScreenState extends State<LoginScreen>
       return;
     }
 
+    if (nim.length != 9) {
+      setState(() {
+        _errorMessage = 'NIM harus 9 karakter.';
+      });
+      return;
+    }
+
     setState(() {
       _loading = true;
       _errorMessage = null;
@@ -101,9 +101,7 @@ class _LoginScreenState extends State<LoginScreen>
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => DashboardScreen(user: user),
-        ),
+        MaterialPageRoute(builder: (_) => DashboardScreen(user: user)),
       );
     } catch (e) {
       debugPrint('Login gagal: $e');
@@ -220,6 +218,10 @@ class _LoginScreenState extends State<LoginScreen>
                                 setState(() => _nimFocused = v);
                               },
                               keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(9),
+                              ],
                             ),
                             const SizedBox(height: 28),
                             if (_errorMessage != null) ...[
@@ -279,8 +281,9 @@ class _LoginScreenState extends State<LoginScreen>
                                         elevation: 0,
                                         shadowColor: Colors.transparent,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
                                       ),
                                       child: const Text(
@@ -299,10 +302,7 @@ class _LoginScreenState extends State<LoginScreen>
                       const SizedBox(height: 32),
                       const Text(
                         'Portal Akademik • 2026',
-                        style: TextStyle(
-                          color: Palette.textHint,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: Palette.textHint, fontSize: 12),
                       ),
                       const SizedBox(height: 24),
                     ],
@@ -324,6 +324,7 @@ class _LoginScreenState extends State<LoginScreen>
     required bool isFocused,
     required ValueChanged<bool> onFocusChange,
     TextInputType keyboardType = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Focus(
       onFocusChange: onFocusChange,
@@ -353,10 +354,8 @@ class _LoginScreenState extends State<LoginScreen>
             child: TextField(
               controller: controller,
               keyboardType: keyboardType,
-              style: const TextStyle(
-                color: Palette.textDark,
-                fontSize: 15,
-              ),
+              inputFormatters: inputFormatters,
+              style: const TextStyle(color: Palette.textDark, fontSize: 15),
               decoration: InputDecoration(
                 hintText: hint,
                 hintStyle: const TextStyle(
@@ -385,9 +384,7 @@ class _LoginScreenState extends State<LoginScreen>
 class _AnimatedBackground extends StatelessWidget {
   final AnimationController controller;
 
-  const _AnimatedBackground({
-    required this.controller,
-  });
+  const _AnimatedBackground({required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -403,18 +400,12 @@ class _AnimatedBackground extends StatelessWidget {
             Positioned(
               top: -80 + math.sin(t) * 20,
               right: -80 + math.cos(t * 0.7) * 15,
-              child: const _Orb(
-                size: 300,
-                color: Color(0xFFDBEAFE),
-              ),
+              child: const _Orb(size: 300, color: Color(0xFFDBEAFE)),
             ),
             Positioned(
               bottom: size.height * 0.1 + math.sin(t * 0.8) * 15,
               left: -60 + math.cos(t * 0.6) * 12,
-              child: const _Orb(
-                size: 200,
-                color: Color(0xFFBFDBFE),
-              ),
+              child: const _Orb(size: 200, color: Color(0xFFBFDBFE)),
             ),
           ],
         );
@@ -427,20 +418,14 @@ class _Orb extends StatelessWidget {
   final double size;
   final Color color;
 
-  const _Orb({
-    required this.size,
-    required this.color,
-  });
+  const _Orb({required this.size, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-      ),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
     );
   }
 }

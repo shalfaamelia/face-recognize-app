@@ -6,8 +6,15 @@ from db import get_db_connection
 
 laporan_barang_bp = Blueprint('laporan_barang', __name__)
 
-UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'uploads', 'laporan_barang')
+UPLOAD_FOLDER = os.path.join(
+    os.path.dirname(__file__),
+    '..',
+    'uploads',
+    'laporan_barang'
+)
+
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
@@ -15,7 +22,10 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # HELPER
 # =========================
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return (
+        '.' in filename
+        and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    )
 
 
 def format_laporan_barang_row(row):
@@ -23,7 +33,11 @@ def format_laporan_barang_row(row):
         row['tanggal'] = row['tanggal'].isoformat()
 
     if row.get('foto'):
-        row['foto_url'] = url_for('laporan_barang.get_laporan_barang_file', filename=row['foto'], _external=True)
+        row['foto_url'] = url_for(
+            'laporan_barang.get_laporan_barang_upload',
+            filename=row['foto'],
+            _external=True
+        )
     else:
         row['foto_url'] = None
 
@@ -35,14 +49,42 @@ def append_date_filter(query, params):
     end_date = request.args.get('endDate')
 
     if start_date:
-        query += " WHERE tanggal >= %s" if "WHERE" not in query.upper() else " AND tanggal >= %s"
+        query += (
+            " WHERE tanggal >= %s"
+            if "WHERE" not in query.upper()
+            else " AND tanggal >= %s"
+        )
         params.append(start_date)
 
     if end_date:
-        query += " WHERE tanggal <= %s" if "WHERE" not in query.upper() else " AND tanggal <= %s"
+        query += (
+            " WHERE tanggal <= %s"
+            if "WHERE" not in query.upper()
+            else " AND tanggal <= %s"
+        )
         params.append(end_date)
 
     return query, params
+
+
+def save_laporan_barang_photo(foto):
+    if not foto or not foto.filename:
+        return None
+
+    if not allowed_file(foto.filename):
+        raise ValueError("Format foto harus png/jpg/jpeg")
+
+    ext = foto.filename.rsplit('.', 1)[1].lower()
+    foto_filename = f"{uuid.uuid4().hex}.{ext}"
+    safe_filename = secure_filename(foto_filename)
+    file_path = os.path.join(UPLOAD_FOLDER, safe_filename)
+
+    foto.save(file_path)
+
+    if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
+        raise ValueError("Foto gagal disimpan")
+
+    return safe_filename
 
 
 # =========================
@@ -57,10 +99,14 @@ def create_laporan_barang():
     foto = request.files.get('foto')
 
     if not user_id or not tanggal or not keterangan:
-        return jsonify({"message": "user_id, tanggal, dan keterangan wajib diisi"}), 400
+        return jsonify({
+            "message": "user_id, tanggal, dan keterangan wajib diisi"
+        }), 400
 
     if keterangan not in ['temuan', 'hilang']:
-        return jsonify({"message": "keterangan harus 'temuan' atau 'hilang'"}), 400
+        return jsonify({
+            "message": "keterangan harus 'temuan' atau 'hilang'"
+        }), 400
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -71,6 +117,7 @@ def create_laporan_barang():
             FROM users
             WHERE id = %s
         """, (user_id,))
+
         user = cursor.fetchone()
 
         if not user:
@@ -79,12 +126,7 @@ def create_laporan_barang():
         foto_filename = None
 
         if foto and foto.filename:
-            if not allowed_file(foto.filename):
-                return jsonify({"message": "Format foto harus png/jpg/jpeg"}), 400
-
-            ext = foto.filename.rsplit('.', 1)[1].lower()
-            foto_filename = f"{uuid.uuid4().hex}.{ext}"
-            foto.save(os.path.join(UPLOAD_FOLDER, secure_filename(foto_filename)))
+            foto_filename = save_laporan_barang_photo(foto)
 
         cursor.execute("""
             INSERT INTO laporan_barang
@@ -103,11 +145,22 @@ def create_laporan_barang():
         ))
 
         conn.commit()
-        return jsonify({"message": "Laporan barang berhasil ditambahkan"}), 201
+
+        return jsonify({
+            "message": "Laporan barang berhasil ditambahkan",
+            "foto": foto_filename
+        }), 201
+
+    except ValueError as e:
+        conn.rollback()
+        return jsonify({"message": str(e)}), 400
 
     except Exception as e:
         conn.rollback()
-        return jsonify({"message": f"Gagal menambahkan laporan barang: {str(e)}"}), 500
+        return jsonify({
+            "message": f"Gagal menambahkan laporan barang: {str(e)}"
+        }), 500
+
     finally:
         cursor.close()
         conn.close()
@@ -130,14 +183,17 @@ def get_laporan_barang_by_user(user_id):
             WHERE user_id = %s
             ORDER BY tanggal DESC, id DESC
         """, (user_id,))
-        rows = cursor.fetchall()
 
+        rows = cursor.fetchall()
         rows = [format_laporan_barang_row(row) for row in rows]
 
         return jsonify(rows), 200
 
     except Exception as e:
-        return jsonify({"message": f"Gagal mengambil laporan barang: {str(e)}"}), 500
+        return jsonify({
+            "message": f"Gagal mengambil laporan barang: {str(e)}"
+        }), 500
+
     finally:
         cursor.close()
         conn.close()
@@ -155,10 +211,14 @@ def update_laporan_barang(laporan_id):
     foto = request.files.get('foto')
 
     if not user_id or not tanggal or not keterangan:
-        return jsonify({"message": "user_id, tanggal, dan keterangan wajib diisi"}), 400
+        return jsonify({
+            "message": "user_id, tanggal, dan keterangan wajib diisi"
+        }), 400
 
     if keterangan not in ['temuan', 'hilang']:
-        return jsonify({"message": "keterangan harus 'temuan' atau 'hilang'"}), 400
+        return jsonify({
+            "message": "keterangan harus 'temuan' atau 'hilang'"
+        }), 400
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -169,25 +229,24 @@ def update_laporan_barang(laporan_id):
             FROM laporan_barang
             WHERE id = %s AND user_id = %s
         """, (laporan_id, user_id))
+
         existing = cursor.fetchone()
 
         if not existing:
-            return jsonify({"message": "Data laporan barang tidak ditemukan"}), 404
+            return jsonify({
+                "message": "Data laporan barang tidak ditemukan"
+            }), 404
 
         foto_filename = existing['foto']
 
         if foto and foto.filename:
-            if not allowed_file(foto.filename):
-                return jsonify({"message": "Format foto harus png/jpg/jpeg"}), 400
-
             if foto_filename:
                 old_path = os.path.join(UPLOAD_FOLDER, foto_filename)
+
                 if os.path.exists(old_path):
                     os.remove(old_path)
 
-            ext = foto.filename.rsplit('.', 1)[1].lower()
-            foto_filename = f"{uuid.uuid4().hex}.{ext}"
-            foto.save(os.path.join(UPLOAD_FOLDER, secure_filename(foto_filename)))
+            foto_filename = save_laporan_barang_photo(foto)
 
         cursor.execute("""
             UPDATE laporan_barang
@@ -207,11 +266,22 @@ def update_laporan_barang(laporan_id):
         ))
 
         conn.commit()
-        return jsonify({"message": "Laporan barang berhasil diperbarui"}), 200
+
+        return jsonify({
+            "message": "Laporan barang berhasil diperbarui",
+            "foto": foto_filename
+        }), 200
+
+    except ValueError as e:
+        conn.rollback()
+        return jsonify({"message": str(e)}), 400
 
     except Exception as e:
         conn.rollback()
-        return jsonify({"message": f"Gagal update laporan barang: {str(e)}"}), 500
+        return jsonify({
+            "message": f"Gagal update laporan barang: {str(e)}"
+        }), 500
+
     finally:
         cursor.close()
         conn.close()
@@ -225,7 +295,9 @@ def delete_laporan_barang(laporan_id):
     user_id = request.args.get('user_id')
 
     if not user_id:
-        return jsonify({"message": "user_id wajib dikirim"}), 400
+        return jsonify({
+            "message": "user_id wajib dikirim"
+        }), 400
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -236,13 +308,17 @@ def delete_laporan_barang(laporan_id):
             FROM laporan_barang
             WHERE id = %s AND user_id = %s
         """, (laporan_id, user_id))
+
         existing = cursor.fetchone()
 
         if not existing:
-            return jsonify({"message": "Data laporan barang tidak ditemukan"}), 404
+            return jsonify({
+                "message": "Data laporan barang tidak ditemukan"
+            }), 404
 
         if existing.get('foto'):
             foto_path = os.path.join(UPLOAD_FOLDER, existing['foto'])
+
             if os.path.exists(foto_path):
                 os.remove(foto_path)
 
@@ -252,11 +328,17 @@ def delete_laporan_barang(laporan_id):
         """, (laporan_id, user_id))
 
         conn.commit()
-        return jsonify({"message": "Laporan barang berhasil dihapus"}), 200
+
+        return jsonify({
+            "message": "Laporan barang berhasil dihapus"
+        }), 200
 
     except Exception as e:
         conn.rollback()
-        return jsonify({"message": f"Gagal menghapus laporan barang: {str(e)}"}), 500
+        return jsonify({
+            "message": f"Gagal menghapus laporan barang: {str(e)}"
+        }), 500
+
     finally:
         cursor.close()
         conn.close()
@@ -264,7 +346,6 @@ def delete_laporan_barang(laporan_id):
 
 # =========================
 # GET SEMUA LAPORAN BARANG (WEB)
-# semua laporan dari mobile tampil di web
 # =========================
 @laporan_barang_bp.route('/laporan/barang', methods=['GET'])
 def get_all_laporan_barang():
@@ -278,19 +359,24 @@ def get_all_laporan_barang():
                    created_at, updated_at
             FROM laporan_barang
         """
+
         params = []
+
         query, params = append_date_filter(query, params)
         query += " ORDER BY tanggal DESC, id DESC"
 
         cursor.execute(query, tuple(params))
-        rows = cursor.fetchall()
 
+        rows = cursor.fetchall()
         rows = [format_laporan_barang_row(row) for row in rows]
 
         return jsonify(rows), 200
 
     except Exception as e:
-        return jsonify({"message": f"Gagal mengambil semua laporan barang: {str(e)}"}), 500
+        return jsonify({
+            "message": f"Gagal mengambil semua laporan barang: {str(e)}"
+        }), 500
+
     finally:
         cursor.close()
         conn.close()
@@ -312,17 +398,23 @@ def get_detail_laporan_barang(laporan_id):
             FROM laporan_barang
             WHERE id = %s
         """, (laporan_id,))
+
         row = cursor.fetchone()
 
         if not row:
-            return jsonify({"message": "Data laporan barang tidak ditemukan"}), 404
+            return jsonify({
+                "message": "Data laporan barang tidak ditemukan"
+            }), 404
 
         row = format_laporan_barang_row(row)
 
         return jsonify(row), 200
 
     except Exception as e:
-        return jsonify({"message": f"Gagal mengambil detail laporan barang: {str(e)}"}), 500
+        return jsonify({
+            "message": f"Gagal mengambil detail laporan barang: {str(e)}"
+        }), 500
+
     finally:
         cursor.close()
         conn.close()
@@ -333,4 +425,31 @@ def get_detail_laporan_barang(laporan_id):
 # =========================
 @laporan_barang_bp.route('/laporan-barang/uploads/<filename>', methods=['GET'])
 def get_laporan_barang_file(filename):
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+
+    print("LAPORAN BARANG FILE 1:", file_path)
+    print("EXISTS:", os.path.exists(file_path))
+
+    if not os.path.exists(file_path):
+        return jsonify({
+            "message": f"File tidak ditemukan: {filename}",
+            "path": file_path
+        }), 404
+
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
+
+@laporan_barang_bp.route('/uploads/laporan_barang/<filename>', methods=['GET'])
+def get_laporan_barang_upload(filename):
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+
+    print("LAPORAN BARANG FILE 2:", file_path)
+    print("EXISTS:", os.path.exists(file_path))
+
+    if not os.path.exists(file_path):
+        return jsonify({
+            "message": f"File tidak ditemukan: {filename}",
+            "path": file_path
+        }), 404
+
     return send_from_directory(UPLOAD_FOLDER, filename)
