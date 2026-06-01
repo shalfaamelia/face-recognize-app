@@ -169,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Masuk untuk melanjutkan ke portal akademik',
+                        'Masuk untuk melanjutkan ke Smart Access',
                         style: TextStyle(
                           color: Palette.textMuted,
                           fontSize: 13.5,
@@ -200,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen>
                             _buildInputField(
                               controller: _namaController,
                               label: 'Nama Lengkap',
-                              hint: 'Masukkan nama Anda',
+                              hint: 'Masukkan Nama Lengkap',
                               icon: Icons.person_outline_rounded,
                               isFocused: _namaFocused,
                               onFocusChange: (v) {
@@ -211,7 +211,7 @@ class _LoginScreenState extends State<LoginScreen>
                             _buildInputField(
                               controller: _nimController,
                               label: 'NIM',
-                              hint: 'Nomor Induk Mahasiswa',
+                              hint: 'Masukkan NIM',
                               icon: Icons.badge_outlined,
                               isFocused: _nimFocused,
                               onFocusChange: (v) {
@@ -301,7 +301,7 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                       const SizedBox(height: 32),
                       const Text(
-                        'Portal Akademik • 2026',
+                        'Smart Access • 2026',
                         style: TextStyle(color: Palette.textHint, fontSize: 12),
                       ),
                       const SizedBox(height: 24),

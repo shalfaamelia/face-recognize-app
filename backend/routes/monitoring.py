@@ -150,18 +150,24 @@ def get_user_monitoring(user_id):
 
     try:
         cursor.execute("""
-            SELECT lm.id, lm.kode, lm.nama, lm.nim, lm.prodi, lm.kelas, lm.masuk
-            FROM log_masuk lm
-            INNER JOIN users u ON lm.kode = u.kode
-            WHERE u.id = %s
-            ORDER BY lm.masuk DESC
-        """, (user_id,))
+            SELECT id, kode, nama, nim, prodi, kelas, masuk, NULL AS terlambat_menit
+            FROM log_masuk
+            WHERE kode = (SELECT kode FROM users WHERE id = %s)
+            UNION ALL
+            SELECT id, kode, nama, nim, prodi, kelas, masuk, terlambat_menit
+            FROM log_terlambat
+            WHERE kode = (SELECT kode FROM users WHERE id = %s)
+            ORDER BY masuk DESC
+        """, (user_id, user_id))
 
         logs = cursor.fetchall()
 
         for log in logs:
             if log.get('masuk'):
                 log['masuk'] = log['masuk'].strftime('%Y/%m/%d %H:%M:%S')
+
+            menit = log.get('terlambat_menit')
+            log['terlambat'] = f"{menit} menit" if menit is not None else ""
 
     except Exception as e:
         return jsonify({"message": f"Failed to fetch logs: {str(e)}"}), 500

@@ -5,7 +5,7 @@ class Palette {
   static const bgCard = Color(0xFFFFFFFF);
   static const bgFieldFocus = Color(0xFFF0F6FF);
   static const bgField = Color(0xFFF8FAFC);
-  static const blue = Color(0xFF1D6FE8);
+  static const blue = Color.fromARGB(255, 20, 79, 169);
   static const cardBorder = Color(0xFFDBEAFE);
   static const textDark = Color(0xFF0C2E6B);
   static const textMuted = Color(0xFF6B89B2);
@@ -15,6 +15,8 @@ class Palette {
   static const blueLight = Color(0xFFEAF1FC);
   static const green = Color(0xFF0D9E75);
   static const greenLight = Color(0xFFE8F8F0);
+  static const purple = Color(0xFF7C3AED);
+  static const purpleLight = Color(0xFFEDE9FE);
   static const orange = Color(0xFFD85A30);
   static const orangeLight = Color(0xFFFEF0E8);
 }

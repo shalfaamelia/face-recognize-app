@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../utils/palette.dart';
+import '../../utils/app_snackbar.dart';
+import '../../utils/app_theme_helpers.dart';
 import 'peminjaman_lab_service.dart';
 import 'peminjaman_lab_model.dart';
 
@@ -8,11 +10,7 @@ class FormPeminjamanScreen extends StatefulWidget {
   final Map<String, dynamic> user;
   final PeminjamanItem? item;
 
-  const FormPeminjamanScreen({
-    super.key,
-    required this.user,
-    this.item,
-  });
+  const FormPeminjamanScreen({super.key, required this.user, this.item});
 
   @override
   State<FormPeminjamanScreen> createState() => _FormPeminjamanScreenState();
@@ -70,46 +68,27 @@ class _FormPeminjamanScreenState extends State<FormPeminjamanScreen> {
   }
 
   Future<void> _pickDate() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
+    final picked = await showAppDatePicker(
       context: context,
-      initialDate: _selectedDate ?? now,
-      firstDate: DateTime(now.year - 1),
-      lastDate: DateTime(now.year + 3),
-      locale: const Locale('id', 'ID'),
+      initialDate: _selectedDate,
     );
-
-    if (picked != null) {
-      setState(() {
-        _selectedDate = picked;
-      });
-    }
+    if (picked != null) setState(() => _selectedDate = picked);
   }
 
   Future<void> _pickMulai() async {
-    final picked = await showTimePicker(
+    final picked = await showAppTimePicker(
       context: context,
-      initialTime: _jamMulai ?? TimeOfDay.now(),
+      initialTime: _jamMulai,
     );
-
-    if (picked != null) {
-      setState(() {
-        _jamMulai = picked;
-      });
-    }
+    if (picked != null) setState(() => _jamMulai = picked);
   }
 
   Future<void> _pickSelesai() async {
-    final picked = await showTimePicker(
+    final picked = await showAppTimePicker(
       context: context,
-      initialTime: _jamSelesai ?? TimeOfDay.now(),
+      initialTime: _jamSelesai,
     );
-
-    if (picked != null) {
-      setState(() {
-        _jamSelesai = picked;
-      });
-    }
+    if (picked != null) setState(() => _jamSelesai = picked);
   }
 
   String _dateLabel() {
@@ -124,9 +103,7 @@ class _FormPeminjamanScreenState extends State<FormPeminjamanScreen> {
     return '$hour:$minute';
   }
 
-  String _dateApi() {
-    return DateFormat('yyyy-MM-dd').format(_selectedDate!);
-  }
+  String _dateApi() => DateFormat('yyyy-MM-dd').format(_selectedDate!);
 
   String _timeApi(TimeOfDay time) {
     final hour = time.hour.toString().padLeft(2, '0');
@@ -138,23 +115,17 @@ class _FormPeminjamanScreenState extends State<FormPeminjamanScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedDate == null || _jamMulai == null || _jamSelesai == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tanggal dan jam wajib dipilih')),
-      );
+      AppSnackbar.warning(context, 'Tanggal dan jam wajib dipilih');
       return;
     }
 
     final userId = _parseUserId(widget.user['id']);
     if (userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ID user tidak ditemukan')),
-      );
+      AppSnackbar.error(context, 'ID user tidak ditemukan');
       return;
     }
 
-    setState(() {
-      _isSaving = true;
-    });
+    setState(() => _isSaving = true);
 
     try {
       if (widget.item == null) {
@@ -177,29 +148,18 @@ class _FormPeminjamanScreenState extends State<FormPeminjamanScreen> {
       }
 
       if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            widget.item == null
-                ? 'Peminjaman berhasil disimpan'
-                : 'Peminjaman berhasil diperbarui',
-          ),
-        ),
+      AppSnackbar.success(
+        context,
+        widget.item == null
+            ? 'Peminjaman berhasil disimpan'
+            : 'Peminjaman berhasil diperbarui',
       );
-
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal simpan: $e')),
-      );
+      AppSnackbar.error(context, 'Gagal simpan: $e');
     } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
-      }
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -218,9 +178,7 @@ class _FormPeminjamanScreenState extends State<FormPeminjamanScreen> {
           decoration: InputDecoration(
             filled: true,
             fillColor: const Color(0xFFF6F7FB),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 14,
               vertical: 14,
@@ -247,23 +205,25 @@ class _FormPeminjamanScreenState extends State<FormPeminjamanScreen> {
         const SizedBox(height: 6),
         InkWell(
           onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
           child: IgnorePointer(
             child: TextFormField(
               controller: TextEditingController(text: value),
               decoration: InputDecoration(
-                suffixIcon: Icon(icon),
+                suffixIcon: Icon(icon, color: Palette.blue),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Palette.blue, width: 1.5),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 14,
                 ),
               ),
-              validator: (_) {
-                if (value.isEmpty) return '$label wajib diisi';
-                return null;
-              },
+              validator: (_) => value.isEmpty ? '$label wajib diisi' : null,
             ),
           ),
         ),
@@ -283,6 +243,7 @@ class _FormPeminjamanScreenState extends State<FormPeminjamanScreen> {
       appBar: AppBar(
         title: Text(
           widget.item == null ? 'Tambah Peminjaman Baru' : 'Edit Peminjaman',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
         ),
         backgroundColor: Palette.blue,
         foregroundColor: Colors.white,
@@ -312,14 +273,14 @@ class _FormPeminjamanScreenState extends State<FormPeminjamanScreen> {
                 label: 'Jam Mulai',
                 value: _timeLabel(_jamMulai),
                 onTap: _pickMulai,
-                icon: Icons.access_time,
+                icon: Icons.access_time_rounded,
               ),
               const SizedBox(height: 14),
               _pickerField(
                 label: 'Jam Selesai',
                 value: _timeLabel(_jamSelesai),
                 onTap: _pickSelesai,
-                icon: Icons.access_time,
+                icon: Icons.access_time_rounded,
               ),
               const SizedBox(height: 14),
               Column(
@@ -333,9 +294,19 @@ class _FormPeminjamanScreenState extends State<FormPeminjamanScreen> {
                   TextFormField(
                     controller: _keteranganController,
                     maxLines: 4,
+                    validator: (value) => value == null || value.trim().isEmpty
+                        ? 'Keterangan wajib diisi'
+                        : null,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: Palette.blue,
+                          width: 1.5,
+                        ),
                       ),
                       contentPadding: const EdgeInsets.all(14),
                     ),
@@ -351,12 +322,17 @@ class _FormPeminjamanScreenState extends State<FormPeminjamanScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Palette.blue,
                     foregroundColor: Colors.white,
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: Text(
                     _isSaving ? 'Menyimpan...' : 'Simpan Peminjaman',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),

@@ -34,7 +34,10 @@ class _RiwayatAksesScreenState extends State<RiwayatAksesScreen> {
     return Scaffold(
       backgroundColor: Palette.bgPage,
       appBar: AppBar(
-        title: const Text('Riwayat Akses'),
+        title: const Text(
+          'Riwayat Akses',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        ),
         backgroundColor: Palette.blue,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -61,9 +64,7 @@ class _RiwayatAksesScreenState extends State<RiwayatAksesScreen> {
           final logs = snapshot.data ?? [];
 
           if (logs.isEmpty) {
-            return const Center(
-              child: Text('Belum ada riwayat akses'),
-            );
+            return const Center(child: Text('Belum ada riwayat akses'));
           }
 
           return RefreshIndicator(
@@ -120,7 +121,7 @@ class _RiwayatAksesScreenState extends State<RiwayatAksesScreen> {
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              'NIM: ${log.nim}',
+                              '${log.nim}',
                               style: const TextStyle(
                                 fontSize: 11,
                                 color: Palette.textMuted,
@@ -144,18 +145,43 @@ class _RiwayatAksesScreenState extends State<RiwayatAksesScreen> {
                           vertical: 5,
                         ),
                         decoration: BoxDecoration(
-                          color: Palette.greenLight,
+                          color: log.isTerlambat
+                              ? const Color(0xFFFEE2E2)
+                              : Palette.greenLight,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           _formatDateTime(log.masuk),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w500,
-                            color: Palette.green,
+                            color: log.isTerlambat
+                                ? const Color(0xFF991B1B)
+                                : Palette.green,
                           ),
                         ),
                       ),
+                      if (log.isTerlambat) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEE2E2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            log.terlambat,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF991B1B),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 );

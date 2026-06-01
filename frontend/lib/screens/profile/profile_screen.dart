@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../utils/palette.dart';
+import '../../utils/app_snackbar.dart';
 import '../login/login_screen.dart';
 import 'profile_service.dart';
 
 class ProfileScreen extends StatefulWidget {
-  final Map<String, dynamic>
-  profile; // profile dapat menyertakan token jika tersedia
+  final Map<String, dynamic> profile;
   const ProfileScreen({super.key, required this.profile});
 
   @override
@@ -97,29 +97,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white, size: 18),
-                SizedBox(width: 8),
-                Text('Profil berhasil diperbarui'),
-              ],
-            ),
-            backgroundColor: Colors.green.shade600,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        AppSnackbar.success(context, 'Profil berhasil diperbarui');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal menyimpan: $e'),
-            backgroundColor: Colors.red.shade600,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        AppSnackbar.error(context, 'Gagal menyimpan: $e');
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -234,7 +216,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Nama
                       _isEditing
                           ? _EditField(
                               label: 'Nama',
@@ -246,7 +227,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           : _InfoRow(label: 'Nama', value: nama),
                       const Divider(height: 22),
 
-                      // NIM
                       _isEditing
                           ? _EditField(
                               label: 'NIM',
@@ -259,13 +239,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           : _InfoRow(label: 'NIM', value: nim),
                       const Divider(height: 22),
 
-                      // Prodi
                       _isEditing
                           ? _EditField(label: 'Prodi', controller: _prodiCtrl)
                           : _InfoRow(label: 'Prodi', value: prodi),
                       const Divider(height: 22),
 
-                      // Kelas
                       _isEditing
                           ? _EditField(label: 'Kelas', controller: _kelasCtrl)
                           : _InfoRow(label: 'Kelas', value: kelas),
@@ -274,7 +252,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Tombol aksi
                 if (!_isEditing) ...[
                   SizedBox(
                     width: double.infinity,
@@ -368,7 +345,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-// Widget info read-only
 class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
@@ -401,7 +377,6 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-// Widget input edit
 class _EditField extends StatelessWidget {
   final String label;
   final TextEditingController controller;

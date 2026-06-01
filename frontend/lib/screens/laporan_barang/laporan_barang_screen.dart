@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../utils/palette.dart';
+import '../../utils/app_snackbar.dart';
+import '../../utils/app_theme_helpers.dart';
 import 'form_laporan_barang_screen.dart';
 import 'laporan_barang_model.dart';
 import 'laporan_barang_service.dart';
@@ -31,7 +33,6 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
   void _loadData() {
     final userId = _parseUserId(widget.user['id']);
     if (userId != null) {
-      // ✅ Sort data terbaru di atas berdasarkan id descending
       _future = LaporanBarangService()
           .getByUser(userId)
           .then((list) => list..sort((a, b) => b.id.compareTo(a.id)));
@@ -39,9 +40,7 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
   }
 
   Future<void> _refresh() async {
-    setState(() {
-      _loadData();
-    });
+    setState(() => _loadData());
     await _future;
   }
 
@@ -49,35 +48,21 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => FormLaporanBarangScreen(user: widget.user, item: item),
+        builder: (_) =>
+            FormLaporanBarangScreen(user: widget.user, item: item),
       ),
     );
-
-    if (result == true) {
-      _refresh();
-    }
+    if (result == true) _refresh();
   }
 
   Future<void> _deleteItem(LaporanBarangItem item) async {
     final userId = _parseUserId(widget.user['id']);
     if (userId == null) return;
 
-    final confirm = await showDialog<bool>(
+    final confirm = await showAppDeleteDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Hapus Laporan'),
-        content: const Text('Yakin ingin menghapus laporan ini?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Hapus'),
-          ),
-        ],
-      ),
+      title: 'Hapus Laporan',
+      content: 'Yakin ingin menghapus laporan barang ini?',
     );
 
     if (confirm != true) return;
@@ -85,15 +70,11 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
     try {
       await LaporanBarangService().delete(id: item.id, userId: userId);
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Laporan berhasil dihapus')));
+      AppSnackbar.success(context, 'Laporan berhasil dihapus');
       _refresh();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Gagal hapus: $e')));
+      AppSnackbar.error(context, 'Gagal hapus: $e');
     }
   }
 
@@ -106,13 +87,11 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
     }
   }
 
-  Color _jenisColor(String jenis) {
-    return jenis == 'temuan' ? Palette.green : Colors.red;
-  }
+  Color _jenisColor(String jenis) =>
+      jenis == 'temuan' ? Palette.green : Colors.red;
 
-  Color _jenisBg(String jenis) {
-    return jenis == 'temuan' ? Palette.greenLight : const Color(0xFFFFE5E5);
-  }
+  Color _jenisBg(String jenis) =>
+      jenis == 'temuan' ? Palette.greenLight : const Color(0xFFFFE5E5);
 
   @override
   Widget build(BuildContext context) {
@@ -121,7 +100,7 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
     return Scaffold(
       backgroundColor: Palette.bgPage,
       appBar: AppBar(
-        title: const Text('Laporan Barang'),
+        title: const Text('Laporan Barang', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
         backgroundColor: Palette.blue,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -137,9 +116,9 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
               future: _future,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                      child: CircularProgressIndicator(color: Palette.blue));
                 }
-
                 if (snapshot.hasError) {
                   return Center(
                     child: Padding(
@@ -157,6 +136,7 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
                 if (items.isEmpty) {
                   return RefreshIndicator(
                     onRefresh: _refresh,
+                    color: Palette.blue,
                     child: ListView(
                       children: const [
                         SizedBox(height: 180),
@@ -168,6 +148,7 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
 
                 return RefreshIndicator(
                   onRefresh: _refresh,
+                  color: Palette.blue,
                   child: ListView.separated(
                     padding: const EdgeInsets.all(16),
                     itemCount: items.length,
@@ -185,13 +166,13 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // ✅ Judul "Laporan Barang X" dan badge status dalam satu Row yang sejajar
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Text(
-                                  'Laporan Barang ${index + 1}', // Menampilkan Laporan Barang 1, Laporan Barang 2, dll.
+                                  'Laporan Barang ${index + 1}',
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -200,9 +181,7 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
                                 ),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
+                                      horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: _jenisBg(item.keterangan),
                                     borderRadius: BorderRadius.circular(8),
@@ -221,32 +200,16 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
                               ],
                             ),
                             const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    'Tanggal Laporan: ${_formatTanggal(item.tanggal)}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Palette.textDark,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            Text(
+                              'Tanggal Laporan: ${_formatTanggal(item.tanggal)}',
+                              style: const TextStyle(
+                                  fontSize: 12, color: Palette.textDark),
                             ),
                             const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    'Deskripsi: ${item.deskripsi.isEmpty ? 'Tidak ada deskripsi' : item.deskripsi}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Palette.textMuted,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            Text(
+                              'Deskripsi: ${item.deskripsi.isEmpty ? 'Tidak ada deskripsi' : item.deskripsi}',
+                              style: const TextStyle(
+                                  fontSize: 12, color: Palette.textMuted),
                             ),
                             const SizedBox(height: 12),
                             if (item.fotoUrl != null &&
@@ -259,7 +222,7 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
                                   height: 120,
                                   width: double.infinity,
                                   fit: BoxFit.cover,
-                                  loadingBuilder: (context, child, progress) {
+                                  loadingBuilder: (_, child, progress) {
                                     if (progress == null) return child;
                                     return Container(
                                       height: 120,
@@ -267,24 +230,19 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
                                       color: Palette.bgField,
                                       child: const Center(
                                         child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
+                                            strokeWidth: 2),
                                       ),
                                     );
                                   },
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      height: 120,
-                                      width: double.infinity,
-                                      color: Palette.bgField,
-                                      child: const Center(
-                                        child: Icon(
-                                          Icons.broken_image,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                    );
-                                  },
+                                  errorBuilder: (_, __, ___) => Container(
+                                    height: 120,
+                                    width: double.infinity,
+                                    color: Palette.bgField,
+                                    child: const Center(
+                                      child: Icon(Icons.broken_image,
+                                          color: Colors.grey),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
@@ -294,6 +252,13 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
                               children: [
                                 OutlinedButton.icon(
                                   onPressed: () => _goToForm(item: item),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Palette.blue,
+                                    side: const BorderSide(color: Palette.blue),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
                                   icon: const Icon(Icons.edit, size: 16),
                                   label: const Text('Edit'),
                                 ),
@@ -302,6 +267,10 @@ class _LaporanBarangScreenState extends State<LaporanBarangScreen> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.red,
                                     foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
                                   ),
                                   onPressed: () => _deleteItem(item),
                                   icon: const Icon(Icons.delete, size: 16),

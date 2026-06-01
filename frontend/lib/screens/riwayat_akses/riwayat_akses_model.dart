@@ -8,6 +8,9 @@ class LogAkses {
   final String prodi;
   final String kelas;
   final DateTime masuk;
+  final String terlambat;
+
+  bool get isTerlambat => terlambat.isNotEmpty;
 
   LogAkses({
     required this.id,
@@ -17,6 +20,7 @@ class LogAkses {
     required this.prodi,
     required this.kelas,
     required this.masuk,
+    required this.terlambat,
   });
 
   factory LogAkses.fromJson(Map<String, dynamic> json) {
@@ -28,6 +32,7 @@ class LogAkses {
       prodi: (json['prodi'] ?? '').toString(),
       kelas: (json['kelas'] ?? '').toString(),
       masuk: _parseTanggal(json['masuk']),
+      terlambat: (json['terlambat'] ?? '').toString(),
     );
   }
 

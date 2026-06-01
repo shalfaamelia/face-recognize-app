@@ -33,6 +33,20 @@ class AktivitasItem {
   });
 }
 
+// ─── Helper: Kapitalisasi huruf pertama ───────────────────
+String _kapitalisasi(String text) {
+  if (text.isEmpty) return text;
+  return text[0].toUpperCase() + text.substring(1);
+}
+
+// ─── Helper: Format waktu — hapus .000 di akhir ──────────
+String _formatWaktu(dynamic waktu) {
+  if (waktu is DateTime) {
+    return waktu.toString().replaceAll(RegExp(r'\.\d{3}$'), '');
+  }
+  return waktu.toString().replaceAll(RegExp(r'\.\d{3}$'), '');
+}
+
 // ─── Dashboard Screen (Shell dengan Bottom Nav) ─────────────
 class DashboardScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -100,9 +114,8 @@ class _HomeTabState extends State<_HomeTab> {
       final laporan = await LaporanBarangService().getByUser(userId);
       final akses = await MonitoringService().fetchUserLogs(userId);
 
-      peminjamanAktif = peminjaman
-          .where((e) => e.status.toLowerCase() == 'disetujui')
-          .length;
+      // ✅ FIX 1: Hitung SEMUA peminjaman, bukan hanya yang disetujui
+      peminjamanAktif = peminjaman.length;
       totalAkses = akses.length;
       laporanBarang = laporan.length;
 
@@ -114,9 +127,10 @@ class _HomeTabState extends State<_HomeTab> {
                 icon: Icons.science_outlined,
                 iconColor: Palette.blue,
                 iconBg: Palette.blueLight,
-                judul: 'Lab ${e.keterangan}',
+                judul: e.keterangan,
                 waktu: 'Peminjaman · ${e.tanggal}',
-                badge: e.status,
+                // ✅ FIX 3: Kapitalisasi badge
+                badge: _kapitalisasi(e.status),
                 badgeColor: Palette.blue,
                 badgeBg: Palette.blueLight,
               ),
@@ -129,8 +143,9 @@ class _HomeTabState extends State<_HomeTab> {
                 iconColor: Palette.orange,
                 iconBg: Palette.orangeLight,
                 judul: 'Barang ${e.keterangan}',
-                waktu: 'Laporan · ${e.tanggal}',
-                badge: e.status,
+                waktu: 'Laporan Barang · ${e.tanggal}',
+                // ✅ FIX 3: Kapitalisasi badge
+                badge: _kapitalisasi(e.status),
                 badgeColor: Palette.orange,
                 badgeBg: Palette.orangeLight,
               ),
@@ -143,8 +158,9 @@ class _HomeTabState extends State<_HomeTab> {
                 iconColor: Palette.green,
                 iconBg: Palette.greenLight,
                 judul: 'Akses Lab',
-                waktu: 'Masuk · ${e.masuk}',
-                badge: 'Riwayat',
+                // ✅ FIX 4: Hilangkan .000 dari waktu masuk
+                waktu: 'Masuk · ${_formatWaktu(e.masuk)}',
+                badge: 'Riwayat Masuk',
                 badgeColor: Palette.green,
                 badgeBg: Palette.greenLight,
               ),
@@ -225,7 +241,7 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: Palette.blue,
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -378,6 +394,7 @@ class _MenuGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final int? userId = _parseUserId(user['id']);
 
+    // ✅ FIX 2: 4 menu agar grid 2x2 seimbang
     return GridView.count(
       crossAxisCount: 2,
       crossAxisSpacing: 12,
@@ -391,7 +408,7 @@ class _MenuGrid extends StatelessWidget {
           iconColor: Palette.blue,
           iconBg: Palette.blueLight,
           title: 'Peminjaman Lab',
-          subtitle: '$peminjamanAktif aktif',
+          subtitle: '$peminjamanAktif peminjaman',
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => PeminjamanLabScreen(user: user)),
@@ -402,7 +419,7 @@ class _MenuGrid extends StatelessWidget {
           iconColor: Palette.orange,
           iconBg: Palette.orangeLight,
           title: 'Laporan Barang',
-          subtitle: '$laporanBarang laporan baru',
+          subtitle: '$laporanBarang laporan',
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => LaporanBarangScreen(user: user)),
@@ -432,6 +449,18 @@ class _MenuGrid extends StatelessWidget {
               ),
             );
           },
+        ),
+        // ✅ FIX 2: Menu ke-4 — Profil Saya agar grid genap
+        _MenuCard(
+          icon: Icons.person_outline,
+          iconColor: Palette.purple,
+          iconBg: Palette.purpleLight,
+          title: 'Profil Saya',
+          subtitle: 'Lihat & edit profil',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => ProfileScreen(profile: user)),
+          ),
         ),
       ],
     );
