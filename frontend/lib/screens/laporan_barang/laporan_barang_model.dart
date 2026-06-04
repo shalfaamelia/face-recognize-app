@@ -7,6 +7,8 @@ class LaporanBarangItem {
   final String nim;
   final String kelas;
   final String prodi;
+  final String ruang;
+  final String noHp;
   final String tanggal;
   final String keterangan;
   final String deskripsi;
@@ -21,6 +23,8 @@ class LaporanBarangItem {
     required this.nim,
     required this.kelas,
     required this.prodi,
+    required this.ruang,
+    required this.noHp,
     required this.tanggal,
     required this.keterangan,
     required this.deskripsi,
@@ -39,44 +43,58 @@ class LaporanBarangItem {
       nim: (json['nim'] ?? '').toString(),
       kelas: (json['kelas'] ?? '').toString(),
       prodi: (json['prodi'] ?? '').toString(),
+      ruang: (json['ruang'] ?? '').toString(),
+      noHp: (json['no_hp'] ?? '').toString(),
       tanggal: (json['tanggal'] ?? '').toString(),
       keterangan: (json['keterangan'] ?? '').toString(),
       deskripsi: (json['deskripsi'] ?? '').toString(),
-      status: (json['status'] ?? 'baru').toString(),
+      status: (json['status'] ?? 'menunggu').toString(),
       foto: json['foto']?.toString(),
       fotoUrl: _normalizeFotoUrl(json['foto_url']?.toString()),
     );
   }
+
+  bool get isMenunggu => status.toLowerCase() == 'menunggu';
+
+  bool get isDiterima => status.toLowerCase() == 'diterima';
 
   static String? _normalizeFotoUrl(String? url) {
     if (url == null || url.isEmpty) return null;
 
     final trimmed = url.trim();
     final appBase = ApiService.loginBaseUrl.replaceFirst(RegExp(r'/+$'), '');
+
     if (trimmed.startsWith('//')) {
       return 'https:$trimmed';
     }
+
     if (trimmed.startsWith('/api/')) {
       return '$appBase$trimmed';
     }
+
     if (trimmed.startsWith('api/')) {
       return '$appBase/$trimmed';
     }
+
     if (trimmed.startsWith('/')) {
       return '$appBase$trimmed';
     }
 
     final uri = Uri.tryParse(trimmed);
+
     if (uri != null && uri.hasScheme) {
       final appBaseUri = Uri.tryParse(appBase);
+
       if (appBaseUri != null &&
           uri.scheme == 'http' &&
           appBaseUri.scheme == 'https' &&
           uri.host == appBaseUri.host) {
         return uri.replace(scheme: 'https').toString();
       }
+
       return trimmed;
     }
+
     return trimmed;
   }
 }

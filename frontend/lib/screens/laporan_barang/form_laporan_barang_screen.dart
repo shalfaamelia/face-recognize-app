@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+
 import '../../utils/palette.dart';
 import '../../utils/app_snackbar.dart';
 import '../../utils/app_theme_helpers.dart';
@@ -12,7 +13,11 @@ class FormLaporanBarangScreen extends StatefulWidget {
   final Map<String, dynamic> user;
   final LaporanBarangItem? item;
 
-  const FormLaporanBarangScreen({super.key, required this.user, this.item});
+  const FormLaporanBarangScreen({
+    super.key,
+    required this.user,
+    this.item,
+  });
 
   @override
   State<FormLaporanBarangScreen> createState() =>
@@ -21,6 +26,9 @@ class FormLaporanBarangScreen extends StatefulWidget {
 
 class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  final _ruangController = TextEditingController();
+  final _noHpController = TextEditingController();
   final _deskripsiController = TextEditingController();
 
   DateTime? _selectedDate;
@@ -37,9 +45,13 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
   @override
   void initState() {
     super.initState();
+
     if (widget.item != null) {
+      _ruangController.text = widget.item!.ruang;
+      _noHpController.text = widget.item!.noHp;
       _deskripsiController.text = widget.item!.deskripsi;
       _selectedKeterangan = widget.item!.keterangan;
+
       try {
         _selectedDate = DateTime.parse(widget.item!.tanggal);
       } catch (_) {}
@@ -48,6 +60,8 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
 
   @override
   void dispose() {
+    _ruangController.dispose();
+    _noHpController.dispose();
     _deskripsiController.dispose();
     super.dispose();
   }
@@ -57,16 +71,23 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
       context: context,
       initialDate: _selectedDate,
     );
-    if (picked != null) setState(() => _selectedDate = picked);
+
+    if (picked != null) {
+      setState(() => _selectedDate = picked);
+    }
   }
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
+
     final image = await picker.pickImage(
       source: ImageSource.gallery,
       imageQuality: 80,
     );
-    if (image != null) setState(() => _selectedImage = image);
+
+    if (image != null) {
+      setState(() => _selectedImage = image);
+    }
   }
 
   String _dateLabel() {
@@ -74,7 +95,9 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
     return DateFormat('dd MMM yyyy', 'id_ID').format(_selectedDate!);
   }
 
-  String _dateApi() => DateFormat('yyyy-MM-dd').format(_selectedDate!);
+  String _dateApi() {
+    return DateFormat('yyyy-MM-dd').format(_selectedDate!);
+  }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -85,6 +108,7 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
     }
 
     final userId = _parseUserId(widget.user['id']);
+
     if (userId == null) {
       AppSnackbar.error(context, 'ID user tidak ditemukan');
       return;
@@ -96,6 +120,8 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
       if (widget.item == null) {
         await LaporanBarangService().create(
           userId: userId,
+          ruang: _ruangController.text.trim(),
+          noHp: _noHpController.text.trim(),
           tanggal: _dateApi(),
           keterangan: _selectedKeterangan!,
           deskripsi: _deskripsiController.text.trim(),
@@ -105,6 +131,8 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
         await LaporanBarangService().update(
           id: widget.item!.id,
           userId: userId,
+          ruang: _ruangController.text.trim(),
+          noHp: _noHpController.text.trim(),
           tanggal: _dateApi(),
           keterangan: _selectedKeterangan!,
           deskripsi: _deskripsiController.text.trim(),
@@ -113,18 +141,22 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
       }
 
       if (!mounted) return;
+
       AppSnackbar.success(
         context,
         widget.item == null
             ? 'Laporan barang berhasil disimpan'
             : 'Laporan barang berhasil diperbarui',
       );
+
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
       AppSnackbar.error(context, 'Gagal simpan: $e');
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 
@@ -134,7 +166,10 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 12, color: Palette.textMuted),
+          style: const TextStyle(
+            fontSize: 12,
+            color: Palette.textMuted,
+          ),
         ),
         const SizedBox(height: 6),
         TextFormField(
@@ -143,7 +178,9 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
           decoration: InputDecoration(
             filled: true,
             fillColor: const Color(0xFFF6F7FB),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 14,
               vertical: 14,
@@ -151,6 +188,41 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _inputField({
+    required TextEditingController controller,
+    required String label,
+    required String validatorMessage,
+    TextInputType keyboardType = TextInputType.text,
+    int maxLines = 1,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return validatorMessage;
+        }
+
+        return null;
+      },
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: Palette.blue,
+            width: 1.5,
+          ),
+        ),
+        contentPadding: const EdgeInsets.all(14),
+      ),
     );
   }
 
@@ -168,7 +240,10 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
           widget.item == null
               ? 'Tambah Laporan Barang Baru'
               : 'Edit Laporan Barang',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         backgroundColor: Palette.blue,
         foregroundColor: Colors.white,
@@ -189,13 +264,30 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
               _readonlyField('Prodi', prodi),
               const SizedBox(height: 14),
 
-              // Date picker
+              _inputField(
+                controller: _ruangController,
+                label: 'Ruang',
+                validatorMessage: 'Ruang wajib diisi',
+              ),
+              const SizedBox(height: 14),
+
+              _inputField(
+                controller: _noHpController,
+                label: 'No HP',
+                validatorMessage: 'No HP wajib diisi',
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 14),
+
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
                     'Tanggal',
-                    style: TextStyle(fontSize: 12, color: Palette.textMuted),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Palette.textMuted,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   InkWell(
@@ -203,7 +295,9 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
                     borderRadius: BorderRadius.circular(12),
                     child: IgnorePointer(
                       child: TextFormField(
-                        controller: TextEditingController(text: _dateLabel()),
+                        controller: TextEditingController(
+                          text: _dateLabel(),
+                        ),
                         decoration: InputDecoration(
                           suffixIcon: const Icon(
                             Icons.calendar_today_outlined,
@@ -224,9 +318,11 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
                             vertical: 14,
                           ),
                         ),
-                        validator: (_) => _selectedDate == null
-                            ? 'Tanggal wajib dipilih'
-                            : null,
+                        validator: (_) {
+                          return _selectedDate == null
+                              ? 'Tanggal wajib dipilih'
+                              : null;
+                        },
                       ),
                     ),
                   ),
@@ -234,7 +330,6 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
               ),
               const SizedBox(height: 14),
 
-              // Dropdown keterangan
               DropdownButtonFormField<String>(
                 value: _selectedKeterangan,
                 items: const [
@@ -260,38 +355,25 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
                     ),
                   ),
                 ),
-                onChanged: (v) => setState(() => _selectedKeterangan = v),
-                validator: (v) => (v == null || v.isEmpty)
-                    ? 'Keterangan wajib dipilih'
-                    : null,
+                onChanged: (value) {
+                  setState(() => _selectedKeterangan = value);
+                },
+                validator: (value) {
+                  return value == null || value.isEmpty
+                      ? 'Keterangan wajib dipilih'
+                      : null;
+                },
               ),
               const SizedBox(height: 14),
 
-              // Deskripsi
-              TextFormField(
+              _inputField(
                 controller: _deskripsiController,
+                label: 'Deskripsi',
+                validatorMessage: 'Deskripsi wajib diisi',
                 maxLines: 4,
-                validator: (value) => value == null || value.trim().isEmpty
-                    ? 'Deskripsi wajib diisi'
-                    : null,
-                decoration: InputDecoration(
-                  labelText: 'Deskripsi',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Palette.blue,
-                      width: 1.5,
-                    ),
-                  ),
-                  contentPadding: const EdgeInsets.all(14),
-                ),
               ),
               const SizedBox(height: 14),
 
-              // Upload foto
               Align(
                 alignment: Alignment.centerLeft,
                 child: Column(
@@ -299,7 +381,10 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
                   children: [
                     const Text(
                       'Upload Foto (opsional)',
-                      style: TextStyle(fontSize: 12, color: Palette.textMuted),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Palette.textMuted,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     ElevatedButton.icon(
@@ -337,6 +422,7 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
                           fit: BoxFit.cover,
                           loadingBuilder: (_, child, progress) {
                             if (progress == null) return child;
+
                             return Container(
                               width: 120,
                               height: 120,
@@ -348,17 +434,19 @@ class _FormLaporanBarangScreenState extends State<FormLaporanBarangScreen> {
                               ),
                             );
                           },
-                          errorBuilder: (_, __, ___) => Container(
-                            width: 120,
-                            height: 120,
-                            color: Palette.bgField,
-                            child: const Center(
-                              child: Icon(
-                                Icons.broken_image,
-                                color: Colors.grey,
+                          errorBuilder: (_, __, ___) {
+                            return Container(
+                              width: 120,
+                              height: 120,
+                              color: Palette.bgField,
+                              child: const Center(
+                                child: Icon(
+                                  Icons.broken_image,
+                                  color: Colors.grey,
+                                ),
                               ),
-                            ),
-                          ),
+                            );
+                          },
                         ),
                       ),
                   ],
