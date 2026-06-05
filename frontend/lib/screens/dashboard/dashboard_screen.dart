@@ -1,56 +1,20 @@
 import 'package:flutter/material.dart';
+
 import '../../utils/palette.dart';
 import '../profile/profile_screen.dart';
 import '../riwayat_akses/riwayat_akses_screen.dart';
 import '../peminjaman_lab/peminjaman_lab_screen.dart';
 import '../laporan_barang/laporan_barang_screen.dart';
+import 'dashboard_model.dart';
+import 'dashboard_service.dart';
 
-// ✅ SERVICE IMPORT
-import '../peminjaman_lab/peminjaman_lab_service.dart';
-import '../laporan_barang/laporan_barang_service.dart';
-import '../riwayat_akses/riwayat_akses_service.dart';
-
-// ─── Model Aktivitas ───────────────────────────────────────
-class AktivitasItem {
-  final IconData icon;
-  final Color iconColor;
-  final Color iconBg;
-  final String judul;
-  final String waktu;
-  final String badge;
-  final Color badgeColor;
-  final Color badgeBg;
-
-  const AktivitasItem({
-    required this.icon,
-    required this.iconColor,
-    required this.iconBg,
-    required this.judul,
-    required this.waktu,
-    required this.badge,
-    required this.badgeColor,
-    required this.badgeBg,
-  });
-}
-
-// ─── Helper: Kapitalisasi huruf pertama ───────────────────
-String _kapitalisasi(String text) {
-  if (text.isEmpty) return text;
-  return text[0].toUpperCase() + text.substring(1);
-}
-
-// ─── Helper: Format waktu — hapus .000 di akhir ──────────
-String _formatWaktu(dynamic waktu) {
-  if (waktu is DateTime) {
-    return waktu.toString().replaceAll(RegExp(r'\.\d{3}$'), '');
-  }
-  return waktu.toString().replaceAll(RegExp(r'\.\d{3}$'), '');
-}
-
-// ─── Dashboard Screen (Shell dengan Bottom Nav) ─────────────
 class DashboardScreen extends StatefulWidget {
   final Map<String, dynamic> user;
-  const DashboardScreen({super.key, required this.user});
+
+  const DashboardScreen({
+    super.key,
+    required this.user,
+  });
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -72,32 +36,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       bottomNavigationBar: _BottomNav(
         selected: _selectedTab,
-        onTap: (i) => setState(() => _selectedTab = i),
+        onTap: (index) => setState(() => _selectedTab = index),
       ),
     );
   }
 }
 
-// ─── Home Tab ───────────────────────────────────────────────
 class _HomeTab extends StatefulWidget {
   final Map<String, dynamic> user;
-  const _HomeTab({required this.user});
+
+  const _HomeTab({
+    required this.user,
+  });
 
   @override
   State<_HomeTab> createState() => _HomeTabState();
 }
 
 class _HomeTabState extends State<_HomeTab> {
-  int peminjamanAktif = 0;
-  int totalAkses = 0;
-  int laporanBarang = 0;
-  List<AktivitasItem> aktivitas = [];
+  final DashboardService _dashboardService = DashboardService();
 
-  int? _parseUserId(dynamic value) {
-    if (value is int) return value;
-    if (value is String) return int.tryParse(value);
-    return null;
-  }
+  DashboardData _dashboardData = DashboardData.empty();
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -106,76 +66,30 @@ class _HomeTabState extends State<_HomeTab> {
   }
 
   Future<void> _loadDashboard() async {
-    final userId = _parseUserId(widget.user['id']);
-    if (userId == null) return;
+    setState(() => _isLoading = true);
 
     try {
-      final peminjaman = await PeminjamanService().getByUser(userId);
-      final laporan = await LaporanBarangService().getByUser(userId);
-      final akses = await MonitoringService().fetchUserLogs(userId);
+      final data = await _dashboardService.getDashboardData(widget.user);
 
-      // ✅ FIX 1: Hitung SEMUA peminjaman, bukan hanya yang disetujui
-      peminjamanAktif = peminjaman.length;
-      totalAkses = akses.length;
-      laporanBarang = laporan.length;
+      if (!mounted) return;
 
-      aktivitas = [
-        ...peminjaman
-            .take(2)
-            .map(
-              (e) => AktivitasItem(
-                icon: Icons.science_outlined,
-                iconColor: Palette.blue,
-                iconBg: Palette.blueLight,
-                judul: e.keterangan,
-                waktu: 'Peminjaman · ${e.tanggal}',
-                // ✅ FIX 3: Kapitalisasi badge
-                badge: _kapitalisasi(e.status),
-                badgeColor: Palette.blue,
-                badgeBg: Palette.blueLight,
-              ),
-            ),
-        ...laporan
-            .take(2)
-            .map(
-              (e) => AktivitasItem(
-                icon: Icons.inventory_2_outlined,
-                iconColor: Palette.orange,
-                iconBg: Palette.orangeLight,
-                judul: 'Barang ${e.keterangan}',
-                waktu: 'Laporan Barang · ${e.tanggal}',
-                // ✅ FIX 3: Kapitalisasi badge
-                badge: _kapitalisasi(e.status),
-                badgeColor: Palette.orange,
-                badgeBg: Palette.orangeLight,
-              ),
-            ),
-        ...akses
-            .take(2)
-            .map(
-              (e) => AktivitasItem(
-                icon: Icons.history_outlined,
-                iconColor: Palette.green,
-                iconBg: Palette.greenLight,
-                judul: 'Akses Lab',
-                // ✅ FIX 4: Hilangkan .000 dari waktu masuk
-                waktu: 'Masuk · ${_formatWaktu(e.masuk)}',
-                badge: 'Riwayat Masuk',
-                badgeColor: Palette.green,
-                badgeBg: Palette.greenLight,
-              ),
-            ),
-      ];
-
-      setState(() {});
+      setState(() {
+        _dashboardData = data;
+        _isLoading = false;
+      });
     } catch (e) {
-      debugPrint("Error dashboard: $e");
+      debugPrint('Error dashboard: $e');
+
+      if (!mounted) return;
+
+      setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final String nama = (widget.user['nama'] ?? 'Pengguna').toString();
+
     final String inisial = nama.isNotEmpty
         ? nama.trim().split(' ').map((w) => w[0]).take(2).join().toUpperCase()
         : 'U';
@@ -188,37 +102,49 @@ class _HomeTabState extends State<_HomeTab> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _Header(nama: nama, inisial: inisial),
+              _Header(
+                nama: nama,
+                inisial: inisial,
+              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _StatRow(
-                      aktif: peminjamanAktif,
-                      akses: totalAkses,
-                      laporan: laporanBarang,
+                      aktif: _dashboardData.peminjamanAktif,
+                      akses: _dashboardData.totalAkses,
+                      laporan: _dashboardData.laporanBarang,
                     ),
                     const SizedBox(height: 20),
-                    _SectionLabel('Menu Utama'),
+                    const _SectionLabel('Menu Utama'),
                     const SizedBox(height: 10),
                     _MenuGrid(
                       user: widget.user,
-                      peminjamanAktif: peminjamanAktif,
-                      laporanBarang: laporanBarang,
-                      totalAkses: totalAkses,
+                      peminjamanAktif: _dashboardData.peminjamanAktif,
+                      laporanBarang: _dashboardData.laporanBarang,
+                      totalAkses: _dashboardData.totalAkses,
                     ),
                     const SizedBox(height: 20),
-                    _SectionLabel('Aktivitas Terbaru'),
+                    const _SectionLabel('Aktivitas Terbaru'),
                     const SizedBox(height: 10),
-                    aktivitas.isEmpty
+                    _isLoading
                         ? const Center(
                             child: Padding(
                               padding: EdgeInsets.all(20),
                               child: CircularProgressIndicator(),
                             ),
                           )
-                        : _AktivitasCard(items: aktivitas),
+                        : _dashboardData.aktivitas.isEmpty
+                            ? const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(20),
+                                  child: Text('Belum ada aktivitas terbaru'),
+                                ),
+                              )
+                            : _AktivitasCard(
+                                items: _dashboardData.aktivitas,
+                              ),
                     const SizedBox(height: 16),
                   ],
                 ),
@@ -231,11 +157,14 @@ class _HomeTabState extends State<_HomeTab> {
   }
 }
 
-// ─── Header ────────────────────────────────────────────────
 class _Header extends StatelessWidget {
   final String nama;
   final String inisial;
-  const _Header({required this.nama, required this.inisial});
+
+  const _Header({
+    required this.nama,
+    required this.inisial,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -269,7 +198,12 @@ class _Header extends StatelessWidget {
           CircleAvatar(
             radius: 20,
             backgroundColor: Colors.white.withOpacity(0.2),
-            child: Text(inisial, style: const TextStyle(color: Colors.white)),
+            child: Text(
+              inisial,
+              style: const TextStyle(
+                color: Colors.white,
+              ),
+            ),
           ),
         ],
       ),
@@ -277,11 +211,11 @@ class _Header extends StatelessWidget {
   }
 }
 
-// ─── STAT ─────────────────────────────────────────────────
 class _StatRow extends StatelessWidget {
   final int aktif;
   final int akses;
   final int laporan;
+
   const _StatRow({
     required this.aktif,
     required this.akses,
@@ -324,6 +258,7 @@ class _StatCard extends StatelessWidget {
   final String value;
   final String label;
   final Color color;
+
   const _StatCard({
     required this.value,
     required this.label,
@@ -352,7 +287,9 @@ class _StatCard extends StatelessWidget {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 10),
+            style: const TextStyle(
+              fontSize: 10,
+            ),
           ),
         ],
       ),
@@ -360,17 +297,22 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-// ─── SECTION ──────────────────────────────────────────────
 class _SectionLabel extends StatelessWidget {
   final String text;
+
   const _SectionLabel(this.text);
 
   @override
-  Widget build(BuildContext context) =>
-      Text(text, style: const TextStyle(fontWeight: FontWeight.w500));
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontWeight: FontWeight.w500,
+      ),
+    );
+  }
 }
 
-// ─── Menu Grid ──────────────────────────────────────────────
 class _MenuGrid extends StatelessWidget {
   final Map<String, dynamic> user;
   final int peminjamanAktif;
@@ -394,7 +336,6 @@ class _MenuGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final int? userId = _parseUserId(user['id']);
 
-    // ✅ FIX 2: 4 menu agar grid 2x2 seimbang
     return GridView.count(
       crossAxisCount: 2,
       crossAxisSpacing: 12,
@@ -409,10 +350,14 @@ class _MenuGrid extends StatelessWidget {
           iconBg: Palette.blueLight,
           title: 'Peminjaman Lab',
           subtitle: '$peminjamanAktif peminjaman',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => PeminjamanLabScreen(user: user)),
-          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PeminjamanLabScreen(user: user),
+              ),
+            );
+          },
         ),
         _MenuCard(
           icon: Icons.inventory_2_outlined,
@@ -420,10 +365,14 @@ class _MenuGrid extends StatelessWidget {
           iconBg: Palette.orangeLight,
           title: 'Laporan Barang',
           subtitle: '$laporanBarang laporan',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => LaporanBarangScreen(user: user)),
-          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => LaporanBarangScreen(user: user),
+              ),
+            );
+          },
         ),
         _MenuCard(
           icon: Icons.history_outlined,
@@ -442,6 +391,7 @@ class _MenuGrid extends StatelessWidget {
               );
               return;
             }
+
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -450,17 +400,20 @@ class _MenuGrid extends StatelessWidget {
             );
           },
         ),
-        // ✅ FIX 2: Menu ke-4 — Profil Saya agar grid genap
         _MenuCard(
           icon: Icons.person_outline,
           iconColor: Palette.purple,
           iconBg: Palette.purpleLight,
           title: 'Profil Saya',
           subtitle: 'Lihat & edit profil',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => ProfileScreen(profile: user)),
-          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ProfileScreen(profile: user),
+              ),
+            );
+          },
         ),
       ],
     );
@@ -500,13 +453,17 @@ class _MenuCardState extends State<_MenuCard> {
       onTap: widget.onTap,
       child: AnimatedScale(
         scale: _pressed ? 0.96 : 1.0,
-        duration: const Duration(milliseconds: 120),
+        duration: const Duration(
+          milliseconds: 120,
+        ),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Palette.bgCard,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Palette.cardBorder),
+            border: Border.all(
+              color: Palette.cardBorder,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -519,7 +476,11 @@ class _MenuCardState extends State<_MenuCard> {
                   color: widget.iconBg,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(widget.icon, color: widget.iconColor, size: 20),
+                child: Icon(
+                  widget.icon,
+                  color: widget.iconColor,
+                  size: 20,
+                ),
               ),
               const SizedBox(height: 10),
               Text(
@@ -533,7 +494,10 @@ class _MenuCardState extends State<_MenuCard> {
               const SizedBox(height: 3),
               Text(
                 widget.subtitle,
-                style: const TextStyle(fontSize: 11, color: Palette.textMuted),
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Palette.textMuted,
+                ),
               ),
             ],
           ),
@@ -543,10 +507,12 @@ class _MenuCardState extends State<_MenuCard> {
   }
 }
 
-// ─── Aktivitas Card ─────────────────────────────────────────
 class _AktivitasCard extends StatelessWidget {
   final List<AktivitasItem> items;
-  const _AktivitasCard({required this.items});
+
+  const _AktivitasCard({
+    required this.items,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -554,14 +520,17 @@ class _AktivitasCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Palette.bgCard,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Palette.cardBorder),
+        border: Border.all(
+          color: Palette.cardBorder,
+        ),
       ),
       child: Column(
-        children: items.asMap().entries.map((e) {
-          final isLast = e.key == items.length - 1;
+        children: items.asMap().entries.map((entry) {
+          final isLast = entry.key == items.length - 1;
+
           return Column(
             children: [
-              _AktivitasRow(item: e.value),
+              _AktivitasRow(item: entry.value),
               if (!isLast)
                 const Divider(
                   height: 1,
@@ -578,12 +547,18 @@ class _AktivitasCard extends StatelessWidget {
 
 class _AktivitasRow extends StatelessWidget {
   final AktivitasItem item;
-  const _AktivitasRow({required this.item});
+
+  const _AktivitasRow({
+    required this.item,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 14,
+        vertical: 12,
+      ),
       child: Row(
         children: [
           Container(
@@ -593,7 +568,11 @@ class _AktivitasRow extends StatelessWidget {
               color: item.iconBg,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(item.icon, color: item.iconColor, size: 16),
+            child: Icon(
+              item.icon,
+              color: item.iconColor,
+              size: 16,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -620,7 +599,10 @@ class _AktivitasRow extends StatelessWidget {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 3,
+            ),
             decoration: BoxDecoration(
               color: item.badgeBg,
               borderRadius: BorderRadius.circular(6),
@@ -640,15 +622,24 @@ class _AktivitasRow extends StatelessWidget {
   }
 }
 
-// ─── Bottom Nav ─────────────────────────────────────────────
 class _BottomNav extends StatelessWidget {
   final int selected;
   final ValueChanged<int> onTap;
-  const _BottomNav({required this.selected, required this.onTap});
+
+  const _BottomNav({
+    required this.selected,
+    required this.onTap,
+  });
 
   static const _items = [
-    {'icon': Icons.home_outlined, 'label': 'Beranda'},
-    {'icon': Icons.person_outline, 'label': 'Profil'},
+    {
+      'icon': Icons.home_outlined,
+      'label': 'Beranda',
+    },
+    {
+      'icon': Icons.person_outline,
+      'label': 'Profil',
+    },
   ];
 
   @override
@@ -656,27 +647,35 @@ class _BottomNav extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: Palette.bgCard,
-        border: Border(top: BorderSide(color: Palette.cardBorder, width: 0.5)),
+        border: Border(
+          top: BorderSide(
+            color: Palette.cardBorder,
+            width: 0.5,
+          ),
+        ),
       ),
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        vertical: 12,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: List.generate(_items.length, (i) {
-          final isSelected = i == selected;
+        children: List.generate(_items.length, (index) {
+          final isSelected = index == selected;
+
           return GestureDetector(
-            onTap: () => onTap(i),
+            onTap: () => onTap(index),
             behavior: HitTestBehavior.opaque,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  _items[i]['icon'] as IconData,
+                  _items[index]['icon'] as IconData,
                   size: 22,
                   color: isSelected ? Palette.blue : Palette.textMuted,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _items[i]['label'] as String,
+                  _items[index]['label'] as String,
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w500,

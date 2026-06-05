@@ -140,6 +140,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: Palette.bgPage,
+      appBar: AppBar(
+        title: const Text(
+          'Profil Saya',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        ),
+        backgroundColor: Palette.blue,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
@@ -261,8 +271,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       icon: const Icon(Icons.edit_outlined),
                       label: const Text('Edit Profil'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Palette.blue,
-                        side: const BorderSide(color: Palette.blue),
+                        backgroundColor: Palette.blue,
+                        foregroundColor: Colors.white,
+                        shadowColor: Colors.transparent,
+                        elevation: 0,
+                        side: BorderSide.none,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -278,8 +291,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       icon: const Icon(Icons.logout_rounded),
                       label: const Text('Logout'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red.shade600,
-                        side: BorderSide(color: Colors.red.shade300),
+                        backgroundColor: Colors.red.shade600,
+                        foregroundColor: Colors.white,
+                        shadowColor: Colors.transparent,
+                        elevation: 0,
+                        side: BorderSide.none,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
