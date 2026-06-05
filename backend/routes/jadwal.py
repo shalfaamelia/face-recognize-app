@@ -8,6 +8,7 @@ jadwal_bp = Blueprint('jadwal', __name__)
 
 JADWAL_REQUIRED_FIELDS = [
     'nama',
+    'prodi',
     'kelas',
     'hari',
     'jam_mulai',
@@ -17,6 +18,7 @@ JADWAL_REQUIRED_FIELDS = [
 JADWAL_IMPORT_REQUIRED_FIELDS = [
     'nama',
     'dosen',
+    'prodi',
     'kelas',
     'hari',
     'jam_mulai',
@@ -38,6 +40,9 @@ JADWAL_IMPORT_HEADER_ALIASES = {
 
     'nip': 'nip',
     'nip dosen': 'nip',
+
+    'prodi': 'prodi',
+    'program studi': 'prodi',
 
     'kelas': 'kelas',
 
@@ -282,6 +287,7 @@ def read_jadwal_excel(file):
             'nama': item.get('nama'),
             'dosen': item.get('dosen'),
             'nip': item.get('nip') or None,
+            'prodi': item.get('prodi'),
             'kelas': item.get('kelas'),
             'hari': hari,
             'jam_mulai': jam_mulai,
@@ -360,6 +366,7 @@ def validate_jadwal_payload(data):
         'dosen_user_id': data.get('dosen_user_id') or None,
         'dosen': normalize_text(data.get('dosen')) or None,
         'nip': normalize_text(data.get('nip')) or None,
+        'prodi': normalize_text(data.get('prodi')),
         'kelas': normalize_text(data.get('kelas')),
         'hari': hari,
         'jam_mulai': jam_mulai,
@@ -392,6 +399,7 @@ def get_jadwal():
                 jp.dosen_user_id,
                 jp.dosen,
                 jp.nip,
+                jp.prodi,
                 jp.kelas,
                 jp.hari,
                 jp.jam_mulai,
@@ -451,18 +459,20 @@ def create_jadwal():
                 dosen_user_id,
                 dosen,
                 nip,
+                prodi,
                 kelas,
                 hari,
                 jam_mulai,
                 jam_selesai
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             payload['kode'],
             payload['nama'],
             dosen['id'],
             dosen['nama'],
             dosen['nip'],
+            payload['prodi'],
             payload['kelas'],
             payload['hari'],
             payload['jam_mulai'],
@@ -517,6 +527,7 @@ def update_jadwal(jadwal_id):
             'dosen_user_id': data.get('dosen_user_id', existing.get('dosen_user_id')),
             'dosen': data.get('dosen', existing.get('dosen')),
             'nip': data.get('nip', existing.get('nip')),
+            'prodi': data.get('prodi', existing.get('prodi')),
             'kelas': data.get('kelas', existing.get('kelas')),
             'hari': data.get('hari', existing.get('hari')),
             'jam_mulai': data.get('jam_mulai', existing.get('jam_mulai')),
@@ -542,6 +553,7 @@ def update_jadwal(jadwal_id):
                 dosen_user_id = %s,
                 dosen = %s,
                 nip = %s,
+                prodi = %s,
                 kelas = %s,
                 hari = %s,
                 jam_mulai = %s,
@@ -553,6 +565,7 @@ def update_jadwal(jadwal_id):
             dosen['id'],
             dosen['nama'],
             dosen['nip'],
+            payload['prodi'],
             payload['kelas'],
             payload['hari'],
             payload['jam_mulai'],
@@ -654,18 +667,20 @@ def import_jadwal():
                     dosen_user_id,
                     dosen,
                     nip,
+                    prodi,
                     kelas,
                     hari,
                     jam_mulai,
                     jam_selesai
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 row['kode'],
                 row['nama'],
                 dosen['id'],
                 dosen['nama'],
                 dosen['nip'],
+                row['prodi'],
                 row['kelas'],
                 row['hari'],
                 row['jam_mulai'],
@@ -677,6 +692,7 @@ def import_jadwal():
                 "nama": row['nama'],
                 "dosen": dosen['nama'],
                 "nip": dosen['nip'],
+                "prodi": row['prodi'],
                 "kelas": row['kelas'],
                 "hari": row['hari'],
             })

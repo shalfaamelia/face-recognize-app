@@ -17,22 +17,8 @@ def login():
         nama = data.get('nama')
         nim = data.get('nim')
 
-        if isinstance(nama, str):
-            nama = nama.strip()
-        if isinstance(nim, str):
-            nim = nim.strip()
-
         if not nama or not nim:
             return jsonify({"message": "Nama dan NIM wajib diisi"}), 400
-
-        if not isinstance(nim, str):
-            nim = str(nim)
-
-        if len(nim) != 9:
-            return jsonify({"message": "NIM harus 9 karakter"}), 400
-
-        if not nim.isdigit():
-            return jsonify({"message": "NIM harus berupa angka"}), 400
 
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)

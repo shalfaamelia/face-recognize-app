@@ -8,6 +8,7 @@ from routes.user_faces import user_faces_bp
 from routes.jadwal import jadwal_bp
 from routes.login import login_bp
 from routes.peminjaman import peminjaman_bp
+from routes.ajuan_barang import ajuan_barang_bp
 from routes.laporan_barang import laporan_barang_bp
 from routes.laporan_peminjaman import laporan_peminjaman_bp
             
@@ -28,6 +29,7 @@ app.register_blueprint(monitoring_bp, url_prefix='/api')
 app.register_blueprint(peminjaman_bp, url_prefix='/api')
 app.register_blueprint(laporan_barang_bp, url_prefix='/api')
 app.register_blueprint(laporan_peminjaman_bp, url_prefix='/api')
+app.register_blueprint(ajuan_barang_bp, url_prefix='/api')
 app.register_blueprint(user_bp, url_prefix='/api')
 app.register_blueprint(user_faces_bp, url_prefix='/api/user_faces') 
 app.register_blueprint(jadwal_bp, url_prefix='/api/jadwal')
